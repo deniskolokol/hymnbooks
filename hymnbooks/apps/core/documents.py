@@ -7,7 +7,8 @@ from datetime import datetime
 
 FIELD_TYPE = (('string', _('String field')),
               ('number', _('Number field')),
-              ('list', _('List of values')),
+              ('document', _('Document field')),
+              ('list', _('List of values or documents')),
               ('image', _('Image field')))
 
 
@@ -48,29 +49,30 @@ class Frame(Document):
 
 class DataField(EmbeddedDocument):
     """
-    Describes a field.
+    Describes a field in the structure of an arbitrary collection.
     """
     field_name = StringField50(required=True)
+    field_label = StringField50()
     field_type = StringField10(choices=FIELD_TYPE, default='string')
     field_required = BooleanField(required=True, default=False)
     field_description = StringField200()
     field_internal_class = StringField()
+    field_display = BooleanField(default=False)
     frame = ReferenceField(Frame)
 
+    def save(self, *args, **kwargs):
+        """
+        Overrides save method: updates.
+        """
+        # Fill out `field_label` field if not given.
+        self.field_label = '' if self.field_label is None else self.field_label.strip()
+        if self.field_label == '':
+            self.field_label = self.field_name.replace('_', ' ').title()
+        super(DataField, self).save(*args, **kwargs)
+
     def __unicode__(self):
-        return self.field_name
-
-
-class Metadata(EmbeddedDocument):
-    """
-    Describes the structure of the fields in an arbitrary collection.
-    """
-    collection_name = StringField200(required=True)
-    fields = ListField(EmbeddedDocumentField(DataField))
-
-    def __unicode__(self):
-        return self.collection_name
-
+        return self.field_label
+    
 
 class Publisher(Document):
     code = StringField10(required=True)
@@ -85,29 +87,23 @@ class UserNote(EmbeddedDocument):
     datetime = DateTimeField(default=datetime.now)
     user = StringField(required=True) # NB: mongoengine users!
     text = StringField(required=True)
-    metadata = EmbeddedDocumentField(Metadata)
+
+    auxdata = DictField()
+    metadata = ListField(EmbeddedDocumentField(DataField))    
 
     def __unicode__(self):
         return self.text if len(self.text) <= 75 else self.text[:75].strip() + '...'
-    
-
-class Role(EmbeddedDocument):
-    """
-    Roles, such as authors, copyrighters, etc.
-    """
-    role = StringField(required=True)
-    metadata = EmbeddedDocumentField(Metadata)
-
-    def __unicode__(self):
-        return self.role
 
 
 class ResponsibilityStatement(EmbeddedDocument):
     """
     Responsibilities: names of Authors, Copyrighters, etc.
     """
-    role = ListField(EmbeddedDocumentField(Role))
-    name = StringField(required=True)
+    name = StringField200(required=True)
+    role = StringField200(required=True)
+
+    auxdata = DictField()
+    metadata = ListField(EmbeddedDocumentField(DataField))    
 
     def __unicode__(self):
         return '%s: %s' % (self.role, self.name)
@@ -120,8 +116,11 @@ class BibliographicCitation(EmbeddedDocumentField):
     author = StringField200(required=True)
     title = StringField200(required=True)
     place_of_publishing = StringField200(required=True) # how to automate cities? multilingual!
-    date_of_publishing = StringField()
+    date_of_publishing = StringField() # invent some intelligent mechanism to parse data and convert it to datettime
     scope_of_citation = StringField50()
+
+    auxdata = DictField()
+    metadata = ListField(EmbeddedDocumentField(DataField))    
 
 
 class ContentImage(EmbeddedDocument):
@@ -132,7 +131,10 @@ class ContentImage(EmbeddedDocument):
     image_id = StringField10(required=True)
     image = ImageField(thumbnail_size=(150, 100, True))
     preview = ImageField(size=(300, 200, True))
-    
+
+    auxdata = DictField()
+    metadata = ListField(EmbeddedDocumentField(DataField))    
+
 
 class ManuscriptContent(EmbeddedDocument):
     """
@@ -141,7 +143,9 @@ class ManuscriptContent(EmbeddedDocument):
     raw_title = StringField(required=True)
     title = ListField(StringField(required=True))
     image = ListField(EmbeddedDocumentField(ContentImage))
-    metadata = EmbeddedDocumentField(Metadata)
+
+    auxdata = DictField()
+    metadata = ListField(EmbeddedDocumentField(DataField))    
 
     def save(self, *args, **kwargs):
         """
@@ -180,7 +184,8 @@ class Manuscript(Document):
     # Technical info.
     updated = DateTimeField(default=datetime.now)
 
-    metadata = EmbeddedDocumentField(Metadata)
+    auxdata = DictField()
+    metadata = ListField(EmbeddedDocumentField(DataField))    
 
     def __unicode__(self):
         return self.title
