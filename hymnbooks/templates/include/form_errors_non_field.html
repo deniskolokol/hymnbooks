@@ -1,0 +1,11 @@
+{% load i18n %}
+
+    {% if form.errors %}
+    <div class="control-group">
+      <div class="controls">
+        {% for error in form.non_field_errors %}
+        <span class="label label-important">{{ error|escape }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
