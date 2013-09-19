@@ -82,6 +82,8 @@ INSTALLED_APPS = (
     # 'django.contrib.admindocs',
 
     'hymnbooks.apps.core',
+    'hymnbooks.apps.cms',
+    'hymnbooks.apps.api',
 )
 
 # A sample logging configuration. The only tangible logging

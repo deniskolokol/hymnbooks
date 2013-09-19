@@ -7,6 +7,7 @@ from django.conf.urls import patterns, include, url
 
 urlpatterns = patterns('',
     url(r'^', include('hymnbooks.apps.core.urls')),
+    url(r'^api/', include('hymnbooks.apps.api.urls')),
     url(r'^cms/', include('hymnbooks.apps.cms.urls')),
 )
 

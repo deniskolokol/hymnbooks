@@ -2,18 +2,17 @@ from mongoengine import *
 
 from django.utils.translation import ugettext_lazy as _
 
-from .utils import slugify_unique
+from hymnbooks.apps.core import utils
 
 from datetime import datetime
 
 """
 Dynamic fields type.
 """
-FIELD_TYPE = (('string', _('String field')),
-              ('number', _('Number field')),
-              ('document', _('Document field')),
-              ('list', _('List of values or documents')),
-              ('image', _('Image field')))
+FIELD_TYPE = (('string', _('String values')),
+              ('number', _('Number values')),
+              ('boolean', _('True of False')),
+              ('document', _('Document class')))
 
 """
 Document status.
@@ -94,7 +93,7 @@ class GenericSlugDocument(GenericDocument):
         """
         Takes care of unique slug value.
         """
-        self.slug = slugify_unique(self.title, self.__class__)
+        self.slug = utils.slugify_unique(self.title, self.__class__)
 
         super(GenericSlugDocument, self).save(*args, **kwargs)
 
@@ -102,29 +101,37 @@ class GenericSlugDocument(GenericDocument):
 class FieldDefinition(EmbeddedDocument):
     """
     Describes a field in the structure of an arbitrary collection.
+
+    * `field_type` allows for the references on the other Documents defined in
+    core.models or as Section models in database.
+
+    * Values of a field actually represented as lists. Even if only one value 
+    is required (such as field_x = 1), it will be stored as a list with the 
+    length of 1 (i.e. field_x = [1]). `field_max_count` specifies the maximum 
+    number of elements in such lists.
     """
-    field_name = StringField(required=True)
-    field_label = StringField()
-    field_type = StringField(choices=FIELD_TYPE, default='string')
-    field_required = BooleanField(required=True, default=False)
-    field_description = StringField()
-    field_internal_class = StringField()
-    field_display = BooleanField(default=False)
+    field_label = StringField(required=True, help_text=_(u'Label'))
+    field_name = StringField(required=True, help_text=_(u'Name'))
+    field_type = StringField(choices=FIELD_TYPE, default='string',
+                             help_text=_(u'Type'))
+    field_internal_class = StringField(help_text=_(u'Document class'))
+    field_required = BooleanField(required=True, default=False,
+                                  help_text=_(u'Required'))
+    field_description = StringField(help_text=_(u'Description (optional)'))
+    field_display = BooleanField(default=False,
+                                 help_text=_(u'Display this field by default'))
+    field_max_count = FloatField(default=float("inf"),
+                                 help_text=_(u'Maximum number of elements'))
 
     def save(self, *args, **kwargs):
         """
         Overrides save method: updates.
         """
-        # Fill out `field_label` field if not given.
-        self.field_label = '' if self.field_label is None else self.field_label.strip()
-        if self.field_label == '':
-            self.field_label = self.field_name.replace('_', ' ').title()
-
-            # Warning!
-            # Here must be regexp getting rid of all non-alphanumeric characters!
-            # And also downcode it!
-            # But do it first on a client side with JS! User must see its creation, 
-            # but not necessarily intrude into it.
+        # Fill out `field_name` if not given.
+        # Warning! This should be a back-end protection for the client-side JS.
+        self.field_name = '' if self.field_name is None else self.field_name.strip()
+        if self.field_name == '':
+            self.field_name = utils.slugify_downcode(self.field_label)
 
         super(FieldDefinition, self).save(*args, **kwargs)
 
@@ -164,9 +171,8 @@ class Voice(EmbeddedDocument):
     voice_name = StringField200()
     description = StringField()
     image_ref = ReferenceField(ContentImage)
-    image_crop = ListField() # pixels coords of top-left and bottom-right corners
-                             # 4 numbers tuple: (X_tl, Y_tl, X_br, Y_br)
-    auxdata = DictField()
+
+    data = DictField()
     metadata = ListField(ReferenceField(Section))
     
 
@@ -180,9 +186,8 @@ class Piece(GenericDocument, EmbeddedDocument):
     orig_mxml = StringField(help_text=_(u'Original MusicXML'))
     orig_mxml_data = DictField() # converted from XML for indexing and searching by notes
     audio = FileField(help_text=_(u'Audio example'))
-    scores = FileField(help_text=_(u'Scores'))
 
-    auxdata = DictField()
+    data = DictField()
     metadata = ListField(ReferenceField(Section))
 
 
@@ -191,10 +196,10 @@ class ManuscriptContent(GenericDocument, EmbeddedDocument):
     Actual Manuscript content (scan parts and description).
     """
     page_index = StringField50(required=True, help_text=_(u'Page index'))
-    page_description = StringField(required=True, help_text=_(u'Description'))
+    page_description = StringField(help_text=_(u'Description'))
     image_ref = ReferenceField(ContentImage)
 
-    auxdata = DictField()
+    data = DictField()
     metadata = ListField(ReferenceField(Section))
 
 
@@ -208,5 +213,5 @@ class Manuscript(GenericSlugDocument):
     pieces = ListField(EmbeddedDocumentField(Piece), help_text=_(u'Pieces'))
     image = ListField(ReferenceField(ContentImage))
 
-    auxdata = DictField()
-    metadata = ListField(EmbeddedDocumentField(FieldDefinition))
+    data = DictField()
+    metadata = ListField(ReferenceField(Section))

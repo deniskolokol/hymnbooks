@@ -89,6 +89,7 @@ def _makeRegex():
     
     return ALL_DOWNCODE_MAPS, regex
 
+
 _MAPINGS = None
 _regex = None
 def downcode(s):
@@ -111,9 +112,13 @@ def downcode(s):
     return downcoded
 
 
+def slugify_downcode(value):
+    return slugify(downcode(value))
+
+
 def slugify_unique(value, doc, slugfield="slug"):
+    potential = base = slugify_downcode(value)
     suffix = 0
-    potential = base = slugify(downcode(value))
     while True:
         if suffix:
             potential = "-".join([base, str(suffix)])
