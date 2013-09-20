@@ -1,5 +1,4 @@
 Django==1.5.2
-PIL==1.1.7
 amqp==1.0.13
 anyjson==0.3.3
 argparse==1.2.1
