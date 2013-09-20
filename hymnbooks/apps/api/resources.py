@@ -1,8 +1,7 @@
-from tastypie import fields 
 from tastypie.resources import Resource
 from tastypie.authorization import Authorization
+from tastypie_mongoengine.fields import *
 from tastypie_mongoengine.resources import MongoEngineResource
-from tastypie_mongoengine.fields import EmbeddedDocumentField
 
 from hymnbooks.apps.core import models
 
@@ -60,14 +59,22 @@ class ManuscriptContentResource(MongoEngineResource):
     class Meta:
         object_class = models.ManuscriptContent
 
+
+class PieceResource(MongoEngineResource):
+    class Meta:
+        object_class = models.Piece
+
         
 class ManuscriptResource(MongoEngineResource):
     """
     Manuscript data.
     """
-    content = EmbeddedDocumentField(
-        embedded='hymnbooks.apps.api.resources.ManuscriptContentResource',
-        attribute='content')
+    content = EmbeddedListField(
+        of='hymnbooks.apps.api.resources.ManuscriptContentResource',
+        attribute='content', full=True, null=True)
+    pieces = EmbeddedListField(
+        of='hymnbooks.apps.api.resources.PieceResource',
+        attribute='pieces', full=True, null=True)
     
     class Meta:
         queryset = models.Manuscript.objects.all()
