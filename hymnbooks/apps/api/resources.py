@@ -34,8 +34,7 @@ class FieldTypeResource(Resource):
 
     class Meta:
         resource_name = 'field_type'
-        list_allowed_methods = ['get']
-        detail_allowed_methods = []
+        allowed_methods = ('get',)
         authorization = Authorization()
 
     def get_object_list(self, request):
@@ -57,12 +56,15 @@ class FieldTypeResource(Resource):
     
 class ManuscriptContentResource(MongoEngineResource):
     class Meta:
+        resource_name = 'manuscript_content'
         object_class = models.ManuscriptContent
+        allowed_methods = ('get')
 
 
 class PieceResource(MongoEngineResource):
     class Meta:
         object_class = models.Piece
+        allowed_methods = ('get')
 
         
 class ManuscriptResource(MongoEngineResource):
@@ -78,5 +80,8 @@ class ManuscriptResource(MongoEngineResource):
     
     class Meta:
         queryset = models.Manuscript.objects.all()
-        allowed_methods = ('get', 'post', 'put', 'delete')
+        # # WARNING! Specify allowed_methods after switching on Authorization and Authentication
+        # allowed_methods = ('get', 'post', 'put', 'delete')
+        list_allowed_methods = ('get',)
+        detail_allowed_methods = ('get',)
         authorization = Authorization()

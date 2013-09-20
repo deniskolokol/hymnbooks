@@ -159,8 +159,13 @@ class ContentImage(GenericDocument):
     (in particular from Manusacript, Content, and eventually Piece).
     """
     image_id = StringField10(required=True)
-    image = ImageField(thumbnail_size=(150, 100, True))
-    preview = ImageField(size=(300, 200, True))
+
+    # # WARNING! Revert back to ImageField after installing PIL!
+    # image = ImageField(thumbnail_size=(150, 100, True))
+    # preview = ImageField(size=(300, 200, True))
+    image = FileField()
+    preview = FileField()
+
 
 
 class Voice(EmbeddedDocument):
