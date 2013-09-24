@@ -35,7 +35,8 @@ class FieldTypeResource(Resource):
 
     class Meta:
         resource_name = 'field_type'
-        allowed_methods = ('get',)
+        list_allowed_methods = ('get',)
+        detail_allowed_methods = ()
         authorization = Authorization()
         # authentication = BasicAuthentication()
 
