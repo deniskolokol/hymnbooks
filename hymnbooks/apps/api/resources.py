@@ -1,5 +1,6 @@
 from tastypie.resources import Resource
 from tastypie.authorization import Authorization
+from tastypie.authentication import BasicAuthentication
 from tastypie_mongoengine.fields import *
 from tastypie_mongoengine.resources import MongoEngineResource
 
@@ -36,6 +37,7 @@ class FieldTypeResource(Resource):
         resource_name = 'field_type'
         allowed_methods = ('get',)
         authorization = Authorization()
+        # authentication = BasicAuthentication()
 
     def get_object_list(self, request):
         """
@@ -59,12 +61,16 @@ class ManuscriptContentResource(MongoEngineResource):
         resource_name = 'manuscript_content'
         object_class = models.ManuscriptContent
         allowed_methods = ('get')
+        authorization = Authorization()
+        # authentication = BasicAuthentication()
 
 
 class PieceResource(MongoEngineResource):
     class Meta:
         object_class = models.Piece
         allowed_methods = ('get')
+        authorization = Authorization()
+        # authentication = BasicAuthentication()
 
         
 class ManuscriptResource(MongoEngineResource):
@@ -85,3 +91,4 @@ class ManuscriptResource(MongoEngineResource):
         list_allowed_methods = ('get',)
         detail_allowed_methods = ('get',)
         authorization = Authorization()
+        # authentication = BasicAuthentication()

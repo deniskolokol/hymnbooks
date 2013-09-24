@@ -3,12 +3,6 @@ from hymnbooks.settings.local_settings import *
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
-ADMINS = (
-    # ('Your Name', 'your_email@example.com'),
-)
-
-MANAGERS = ADMINS
-
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = []
@@ -60,9 +54,10 @@ MIDDLEWARE_CLASSES = (
 )
 
 ROOT_URLCONF = 'hymnbooks.urls'
-
-# Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = 'hymnbooks.wsgi.application'
+AUTHENTICATION_BACKENDS = (
+    'mongoengine.django.auth.MongoEngineBackend',
+)
 
 INSTALLED_APPS = (
     'django.contrib.auth',
@@ -76,6 +71,11 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
 
+    # 3rd party
+    'tastypie',
+    'tastypie_mongoengine',
+
+    # project apps
     'hymnbooks.apps.core',
     'hymnbooks.apps.cms',
     'hymnbooks.apps.api',
