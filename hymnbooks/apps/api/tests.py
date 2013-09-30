@@ -32,15 +32,16 @@ class FieldTypeResourceTest(ResourceTestCase):
             self.api_client.get('/api/v1/field_type/detail/', format='json'))
 
 
-# # WARNING! Find workaround to import data from fixtures!
-# class ManuscriptResourceTest(ResourceTestCase):
+# WARNING! Find workaround to import data from fixtures!
+class ManuscriptResourceTest(ResourceTestCase):
+    fixtures = ['manuscript_resource_test.json']
 
-#     def setUp(self):
-#         super(ManuscriptResourceTest, self).setUp()
+    def setUp(self):
+        super(ManuscriptResourceTest, self).setUp()
 
-#         # Create a user.
-#         self.username = 'test_user'
-#         self.password = 'testuserpass'
-#         self.user = User.objects.create_user(self.username, 'daniel@example.com', self.password)
+        # Create a user.
+        self.username = 'test_user'
+        self.password = 'testuserpass'
+        self.user = User.objects.create_user(self.username, 'daniel@example.com', self.password)
 
-#         # ...
+        # ...

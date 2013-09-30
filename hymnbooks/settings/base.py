@@ -74,12 +74,16 @@ INSTALLED_APPS = (
     # 3rd party
     'tastypie',
     'tastypie_mongoengine',
+    'mongoengine.django.mongo_auth',
 
     # project apps
     'hymnbooks.apps.core',
     'hymnbooks.apps.cms',
     'hymnbooks.apps.api',
 )
+
+AUTH_USER_MODEL = 'mongo_auth.MongoUser'
+MONGOENGINE_USER_DOCUMENT = 'mongoengine.django.auth.User'
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to

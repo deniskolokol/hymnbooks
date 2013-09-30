@@ -1,0 +1,140 @@
+{
+    "origin" : {
+        "title" : "origin",
+        "help_text" : "Origin",
+        "fields" : {
+            "place_of_origin" : {
+                "blank": true,
+                "default": null,
+                "help_text": "Place of origin",
+                "nullable": true,
+                "readonly": false,
+                "type": "string",
+                "unique": false
+            },
+            "date_of_origin" : {
+                "blank": true,
+                "default": null,
+                "help_text": "Date of origin",
+                "nullable": true,
+                "readonly": false,
+                "type": "string",
+                "unique": false
+            }
+        }
+    },
+    "additional_notes" : {
+        "title": "additional_notes",
+        "help_text": "Additional Notes",
+        "fields" : {
+            "note" : {
+                "blank": true,
+                "default": null,
+                "help_text": "Notatka",
+                "nullable": true,
+                "readonly": false,
+                "type": "string",
+                "unique": false
+            }
+        }
+    },
+    "bibliographic_citation" : {
+        "title" : "bibliographic_citation",
+        "help_text" : "Bibliographic Citation",
+        "fields" : {
+            "author" : {
+                "blank": true,
+                "default": null,
+                "help_text": "Author",
+                "nullable": true,
+                "readonly": false,
+                "type": "string",
+                "unique": false
+            },
+            "source" : {
+                "blank": true,
+                "default": null,
+                "help_text": "Source",
+                "nullable": true,
+                "readonly": false,
+                "type": "string",
+                "unique": false
+            },
+            "scope_of_citation" : {
+                "blank": true,
+                "default": null,
+                "help_text": "Scope of Citation",
+                "nullable": true,
+                "readonly": false,
+                "type": "string",
+                "unique": false
+            },
+            "place_of_publishing" : {
+                "blank": true,
+                "default": null,
+                "help_text": "Place of Publishing",
+                "nullable": true,
+                "readonly": false,
+                "type": "string",
+                "unique": false
+            },
+            "date_of_publishing" : {
+                "blank": true,
+                "default": null,
+                "help_text": "Date of Publishing",
+                "nullable": true,
+                "readonly": false,
+                "type": "string",
+                "unique": false
+            },
+        }
+    },
+    "accompanying_material" : {
+        "title" : "accompanying_material",
+        "help_text" : "Dodatkowe materialy",
+        "fields" : {
+            "description" : {
+                "blank": true,
+                "default": null,
+                "help_text": "Opis",
+                "nullable": true,
+                "readonly": false,
+                "type": "string",
+                "unique": false
+            }
+        }        
+    },
+    "support" : {
+        "title" : "support",
+        "help_text" : "Wsparcie",
+        "fields" : {
+            "evidence" : {
+                "blank": true,
+                "default": null,
+                "help_text": "Dowód",
+                "nullable": true,
+                "readonly": false,
+                "type": "string",
+                "unique": false
+            },
+        "source" :  {
+                "blank": true,
+                "default": null,
+                "help_text": "Źródło",
+                "nullable": true,
+                "readonly": false,
+                "type": "string",
+                "unique": false
+            },
+        "trusted" :  {
+                "blank": true,
+                "default": true,
+                "help_text": "Potwierdzone",
+                "nullable": false,
+                "readonly": false,
+                "type": "boolean",
+                "unique": false
+            }
+        }
+    }
+}

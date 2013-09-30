@@ -1,0 +1,11 @@
+# POST
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '
+{"title" : "support", "help_text" : "Wsparcie", "fields" : [ {"field_name" :
+"evidence", "blank": true,"default": null,"help_text": "Dowód","nullable": true,"readonly": false,"field_type": "string","unique": false}, {"field_name" : "source","blank": true,"default": null,"help_text": "Źródło","nullable": true,"readonly": false,"field_type": "string","unique": false}, {"field_name" : "trusted","blank": true,"default": true,"help_text": "Potwierdzone","nullable": false,"readonly": false,"field_type": "boolean","unique": false}]}' http://dev.hymnbooks:8000/api/v1/section/
+
+# DELETE
+curl --dump-header - -H "Content-Type: application/json" -X DELETE http://dev.hymnbooks:8000/api/v1/section/5245f82602c8f106900067c9/?username=beta\&api_key=715c1f6a8823d4ac2e470f178i9wc6e8fe71800f
+
+# PATCH (partial update)
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"default": false}' http://localhost:8000/api/v1/section/5245f02c02c8f1062ff3023b/fields/2/

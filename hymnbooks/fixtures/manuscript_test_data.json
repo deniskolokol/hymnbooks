@@ -1,0 +1,580 @@
+[
+    {
+        "title" : "Kancjonał St. M",
+        "description" : "Rękopis papierowy oprawny w okładkę papierową. Zawiera 25 kart numerowanych (numeracja ciągła) w formacie stojącym o wymiarach 214 x 180 mm, oraz kart nlb. stanowiących część okładki. Brak karty tytułowej. Rękopis datowany przez W. Świerczka na 2 poł. XVIII wieku. Na okładce w lewym górnym rogu biała kwadratowa naklejka z wpisanym niebieskim atramentem  St 7 M  | (XVIII w). Obok naklejka okrągła z wpisanym  M. poniżej naklejkaprostokątna z granatową ramką, z wpisanym różowym atramentem  Benedyktynk.  | Staniątki  |  71/XVIII w. Trzon rękopisu spisany jedną ręką (zapis nutowy wraz tekstem słownym).",
+        "sections" : [
+            {
+                "section_name" : "origin",
+                "section" : ObjectId("52445c4d02c8f105f1570c98"),
+                "data" : [
+                    {
+                        "date_of_origin" : "XVIII w.",
+                        "place_of_origin" : "Staniątki, Polska"
+                    }
+                ],
+            },
+            {
+                "section_name" : "additional_notes",
+                "section" : ObjectId("52445e0302c8f105f1570c99"),
+                "data" : [
+                    {
+                        "note" : "Karty tytułowej brak" 
+                    },
+                    { 
+                        "note" : "Niebieska kwadratowa naklejka z wpisanym białym atramentem" 
+                    },
+                    { 
+                        "note" : "25 kart numerowanych, numeracja ciągła" 
+                    },
+                    { 
+                        "note" : "Oczywiście i dla innych wcześniejszych lub późniejszych okresów..." 
+                    }
+                ]
+            }
+        ],
+        "content" : [
+            {
+                "title" : "k. 1v",
+                "status" : "active",
+                "page_index" : "k. 1v",
+                "page_description" : "wewnętrzna strona okładki",
+            }, 
+            {
+                "title" : "k. 2r",
+                "status" : "active",
+                "page_index" : "k. 2r",
+                "page_description" : "nlb., vacat",
+            },
+            {
+                "title" : "k. 2v",
+                "status" : "active",
+                "page_index" : "k. 2v",
+                "page_description" : "nlb., na środku czarnym atramentem Kancjonał na 1 głos",
+            },
+            {
+                "title" : "k. 3r",
+                "status" : "active",
+                "page_index" : "k. 3r",
+                "page_description" : "pierwsza karta numerowana, w prawym górnym rogu ołówkiem 1 głos"
+            },
+            {
+                "title" : "k. 3v-26v",
+                "status" : "active",
+                "page_index" : "k. 3v-26v",
+                "page_description" : "zapis nutowy",
+                "sections" : [
+                    "section_name" : "bibliographic_citation",
+                    "section" : ObjectId("52445f4a02c8f105f1570c9a"),
+                    "data" : [
+                        {
+                            "author" : "S. Punrap"
+                            "source" : "Studia Copernicana, Repertorium auctorum Bohemorum provectum idearum post Universitatem Pragensem conditam illustrans, tomus I",
+                            "scope_of_citation" : "volume25, pagesč. 961, s. 344",
+                            "place_of_publishing" : "Wratislaviae etc.",
+                            "date_of_publishing" : "1985"
+                        },
+                        {
+                            "author" : "P. Spunar"
+                            "source" : "Monumenta Conciliorum Generalium seculi decimi quinti",
+                            "scope_of_citation" : "volume1, pagess. 493-495, 400-401",
+                            "place_of_publishing" : "Wien",
+                            "date_of_publishing" : "1857"
+                        }
+                    ],
+                    "section_name" : "accompanying_material",
+                    "section" : ObjectId("5244635702c8f105f1570c9b"),
+                    "data" : [
+                        {
+                            "description" : "Do rukopisu je vloženo pět papírových lístků."
+                        },
+                        { 
+                            "description" : "I. Rozměry 16 x 17 cm, s textem evangelia Mt. XX,20-28."
+                        },
+                        {
+                            "description" : "II. Rozměry 6 x 14,5 cm, výpisky z církevního práva a část kázání (?)."
+                        },
+                        {
+                            "description" : "III. Rozměry 6 x 12 cm, na jedné straně zlomek českého listu (dochována část oslovení Služba má, purgrabě milý a datace Zelená Hora (?) feria quarta ante circumcisionem domini), na druhé straně latinské poznámky."
+                        },
+                        {
+                            "description" : "IV. Rozměry 3,5 x 6,5 cm, na jedné straně části latinských textů (modliteb ?), na druhé straně seznam českých, alespoň částečně šlechtických jmen."
+                        },
+                        {
+                            "description" : "V. Rozměry 6,5 x 3,5 cm, fragment urbáře (? - seznam českých jmen a peněžních částek)."
+                        }
+                    ]
+                ]
+            },
+            {
+                "title" : "k. 27 r-v",
+                "status" : "active",
+                "page_index" : "k. 27 r-v",
+                "page_description" : "vacat",
+            },
+            {
+                "title" : "k. 28r",
+                "status" : "active",
+                "page_index" : "k. 28r",
+                "page_description" : "wyklejka okładki",
+            }
+        ],
+        "pieces" : [
+            {
+                "author" : [ "Goracio Maura" ],
+                "incipit" : "Omnium Sanctorum pia iuvamina ad regis",
+                "note" : "Zapis w kluczu C1 z bemolem na czwartej linii",
+                "status" : "active",
+                "title" : "Pro Festo Sanctorum Omnium",
+                "voices" : [],
+                "scores_mxml" : "
+<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>
+<!DOCTYPE score-partwise PUBLIC \"-//Recordare//DTD MusicXML 3.0 Partwise//EN\" \"http://www.musicxml.org/dtds/partwise.dtd\">
+<score-partwise version=\"3.0\">
+  <identification>
+    <rights>©</rights>
+    <encoding>
+      <software>Finale 2012 for Windows</software>
+      <software>Dolet Light for Finale 2012</software>
+      <encoding-date>2013-09-16</encoding-date>
+      <supports attribute=\"new-system\" element=\"print\" type=\"yes\" value=\"yes\"/>
+      <supports attribute=\"new-page\" element=\"print\" type=\"yes\" value=\"yes\"/>
+    </encoding>
+  </identification>
+  <defaults>
+    <scaling>
+      <millimeters>7.2319</millimeters>
+      <tenths>40</tenths>
+    </scaling>
+    <page-layout>
+      <page-height>1643</page-height>
+      <page-width>1161</page-width>
+      <page-margins type=\"both\">
+        <left-margin>105</left-margin>
+        <right-margin>70</right-margin>
+        <top-margin>70</top-margin>
+        <bottom-margin>70</bottom-margin>
+      </page-margins>
+    </page-layout>
+    <system-layout>
+      <system-margins>
+        <left-margin>0</left-margin>
+        <right-margin>0</right-margin>
+      </system-margins>
+      <system-distance>121</system-distance>
+      <top-system-distance>70</top-system-distance>
+    </system-layout>
+    <appearance>
+      <line-width type=\"stem\">0.7487</line-width>
+      <line-width type=\"beam\">5</line-width>
+      <line-width type=\"staff\">0.7487</line-width>
+      <line-width type=\"light barline\">0.7487</line-width>
+      <line-width type=\"heavy barline\">5</line-width>
+      <line-width type=\"leger\">0.7487</line-width>
+      <line-width type=\"ending\">0.7487</line-width>
+      <line-width type=\"wedge\">0.7487</line-width>
+      <line-width type=\"enclosure\">0.7487</line-width>
+      <line-width type=\"tuplet bracket\">0.7487</line-width>
+      <note-size type=\"grace\">60</note-size>
+      <note-size type=\"cue\">60</note-size>
+      <distance type=\"hyphen\">120</distance>
+      <distance type=\"beam\">8</distance>
+    </appearance>
+    <music-font font-family=\"Maestro,engraved\" font-size=\"20.5\"/>
+    <word-font font-family=\"Times New Roman\" font-size=\"10.25\"/>
+    <lyric-font font-family=\"Times New Roman\" font-size=\"10.25\"/>
+  </defaults>
+  <credit page=\"1\">
+    <credit-type>rights</credit-type>
+    <credit-words default-x=\"598\" default-y=\"53\" font-size=\"10\" justify=\"center\" valign=\"bottom\">©</credit-words>
+  </credit>
+  <credit page=\"1\">
+    <credit-words default-x=\"105\" default-y=\"1576\" font-size=\"12\" valign=\"top\">Score</credit-words>
+  </credit>
+  <part-list>
+    <score-part id=\"P1\">
+      <part-name print-object=\"no\">MusicXML Part</part-name>
+      <score-instrument id=\"P1-I1\">
+        <instrument-name>SmartMusic SoftSynth</instrument-name>
+        <virtual-instrument/>
+      </score-instrument>
+      <midi-device>SmartMusic SoftSynth</midi-device>
+      <midi-instrument id=\"P1-I1\">
+        <midi-channel>1</midi-channel>
+        <midi-bank>15489</midi-bank>
+        <midi-program>20</midi-program>
+        <volume>80</volume>
+        <pan>0</pan>
+      </midi-instrument>
+    </score-part>
+  </part-list>
+  <!--=========================================================-->
+  <part id=\"P1\">
+    <measure number=\"1\" width=\"203\">
+      <print>
+        <system-layout>
+          <system-margins>
+            <left-margin>70</left-margin>
+            <right-margin>0</right-margin>
+          </system-margins>
+          <top-system-distance>211</top-system-distance>
+        </system-layout>
+        <measure-numbering>system</measure-numbering>
+      </print>
+      <attributes>
+        <divisions>2</divisions>
+        <key>
+          <fifths>-1</fifths>
+          <mode>major</mode>
+        </key>
+        <time symbol=\"cut\">
+          <beats>2</beats>
+          <beat-type>2</beat-type>
+        </time>
+        <clef>
+          <sign>G</sign>
+          <line>2</line>
+        </clef>
+      </attributes>
+      <sound tempo=\"240\"/>
+      <note default-x=\"107\">
+        <pitch>
+          <step>F</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>8</duration>
+        <voice>1</voice>
+        <type>whole</type>
+        <lyric default-y=\"-80\" number=\"1\">
+          <syllabic>begin</syllabic>
+          <text>O</text>
+        </lyric>
+      </note>
+    </measure>
+    <!--=======================================================-->
+    <measure number=\"2\" width=\"109\">
+      <note default-x=\"13\">
+        <pitch>
+          <step>A</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>8</duration>
+        <voice>1</voice>
+        <type>whole</type>
+        <lyric default-y=\"-80\" number=\"1\">
+          <syllabic>middle</syllabic>
+          <text>mni</text>
+        </lyric>
+      </note>
+    </measure>
+    <!--=======================================================-->
+    <measure number=\"3\" width=\"109\">
+      <note default-x=\"13\">
+        <pitch>
+          <step>C</step>
+          <octave>5</octave>
+        </pitch>
+        <duration>8</duration>
+        <voice>1</voice>
+        <type>whole</type>
+        <lyric default-y=\"-80\" number=\"1\">
+          <syllabic>end</syllabic>
+          <text>um</text>
+        </lyric>
+      </note>
+    </measure>
+    <!--=======================================================-->
+    <measure number=\"4\" width=\"109\">
+      <note default-x=\"13\">
+        <pitch>
+          <step>B</step>
+          <alter>-1</alter>
+          <octave>4</octave>
+        </pitch>
+        <duration>8</duration>
+        <voice>1</voice>
+        <type>whole</type>
+        <lyric default-y=\"-80\" number=\"1\">
+          <syllabic>begin</syllabic>
+          <text>San</text>
+        </lyric>
+      </note>
+    </measure>
+    <!--=======================================================-->
+    <measure number=\"5\" width=\"131\">
+      <note default-x=\"13\">
+        <pitch>
+          <step>G</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>4</duration>
+        <voice>1</voice>
+        <type>half</type>
+        <stem default-y=\"5\">up</stem>
+        <lyric default-y=\"-80\" number=\"1\">
+          <syllabic>middle</syllabic>
+          <text>cto</text>
+        </lyric>
+      </note>
+      <note default-x=\"72\">
+        <pitch>
+          <step>A</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>4</duration>
+        <tie type=\"start\"/>
+        <voice>1</voice>
+        <type>half</type>
+        <stem default-y=\"11\">up</stem>
+        <notations>
+          <tied type=\"start\"/>
+        </notations>
+      </note>
+    </measure>
+    <!--=======================================================-->
+    <measure number=\"6\" width=\"145\">
+      <note default-x=\"13\">
+        <pitch>
+          <step>A</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>4</duration>
+        <tie type=\"stop\"/>
+        <voice>1</voice>
+        <type>half</type>
+        <stem default-y=\"11\">up</stem>
+        <notations>
+          <tied type=\"stop\"/>
+        </notations>
+      </note>
+      <note default-x=\"72\">
+        <pitch>
+          <step>G</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>2</duration>
+        <voice>1</voice>
+        <type>quarter</type>
+        <stem default-y=\"5\">up</stem>
+      </note>
+      <note default-x=\"108\">
+        <pitch>
+          <step>F</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>2</duration>
+        <voice>1</voice>
+        <type>quarter</type>
+        <stem default-y=\"0.5\">up</stem>
+      </note>
+    </measure>
+    <!--=======================================================-->
+    <measure number=\"7\" width=\"111\">
+      <note default-x=\"13\">
+        <pitch>
+          <step>G</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>8</duration>
+        <voice>1</voice>
+        <type>whole</type>
+        <lyric default-y=\"-80\" number=\"1\">
+          <syllabic>end</syllabic>
+          <text>rum</text>
+        </lyric>
+      </note>
+    </measure>
+    <!--=======================================================-->
+    <measure number=\"8\" width=\"222\">
+      <print new-system=\"yes\">
+        <system-layout>
+          <system-distance>80</system-distance>
+        </system-layout>
+      </print>
+      <note default-x=\"77\">
+        <rest/>
+        <duration>4</duration>
+        <voice>1</voice>
+        <type>half</type>
+      </note>
+      <note default-x=\"150\">
+        <pitch>
+          <step>G</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>4</duration>
+        <voice>1</voice>
+        <type>half</type>
+        <stem default-y=\"5\">up</stem>
+        <lyric default-y=\"-80\" number=\"1\">
+          <syllabic>begin</syllabic>
+          <text>pi</text>
+        </lyric>
+      </note>
+    </measure>
+    <!--=======================================================-->
+    <measure number=\"9\" width=\"152\">
+      <note default-x=\"14\">
+        <pitch>
+          <step>B</step>
+          <alter>-1</alter>
+          <octave>4</octave>
+        </pitch>
+        <duration>6</duration>
+        <voice>1</voice>
+        <type>half</type>
+        <dot/>
+        <stem default-y=\"-55\">down</stem>
+        <lyric default-y=\"-80\" justify=\"left\" number=\"1\">
+          <syllabic>end</syllabic>
+          <text>a</text>
+          <extend type=\"start\"/>
+        </lyric>
+      </note>
+      <note default-x=\"108\">
+        <pitch>
+          <step>A</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>2</duration>
+        <voice>1</voice>
+        <type>quarter</type>
+        <stem default-y=\"10.5\">up</stem>
+      </note>
+    </measure>
+    <!--=======================================================-->
+    <measure number=\"10\" width=\"172\">
+      <note default-x=\"14\">
+        <pitch>
+          <step>G</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>2</duration>
+        <voice>1</voice>
+        <type>quarter</type>
+        <stem default-y=\"5\">up</stem>
+      </note>
+      <note default-x=\"57\">
+        <pitch>
+          <step>F</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>2</duration>
+        <voice>1</voice>
+        <type>quarter</type>
+        <stem default-y=\"0\">up</stem>
+        <lyric name=\"verse\" number=\"1\">
+          <extend type=\"stop\"/>
+        </lyric>
+      </note>
+      <note default-x=\"100\">
+        <pitch>
+          <step>G</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>4</duration>
+        <tie type=\"start\"/>
+        <voice>1</voice>
+        <type>half</type>
+        <stem default-y=\"5\">up</stem>
+        <notations>
+          <tied type=\"start\"/>
+        </notations>
+        <lyric default-y=\"-80\" number=\"1\">
+          <syllabic>begin</syllabic>
+          <text>iu</text>
+        </lyric>
+      </note>
+    </measure>
+    <!--=======================================================-->
+    <measure number=\"11\" width=\"156\">
+      <note default-x=\"14\">
+        <pitch>
+          <step>G</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>4</duration>
+        <tie type=\"stop\"/>
+        <voice>1</voice>
+        <type>half</type>
+        <stem default-y=\"5\">up</stem>
+        <notations>
+          <tied type=\"stop\"/>
+        </notations>
+      </note>
+      <note default-x=\"84\">
+        <pitch>
+          <step>F</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>4</duration>
+        <tie type=\"start\"/>
+        <voice>1</voice>
+        <type>half</type>
+        <stem default-y=\"0\">up</stem>
+        <notations>
+          <tied type=\"start\"/>
+        </notations>
+        <lyric default-y=\"-80\" number=\"1\">
+          <syllabic>middle</syllabic>
+          <text>va</text>
+        </lyric>
+      </note>
+    </measure>
+    <!--=======================================================-->
+    <measure number=\"12\" width=\"156\">
+      <note default-x=\"13\">
+        <pitch>
+          <step>F</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>4</duration>
+        <tie type=\"stop\"/>
+        <voice>1</voice>
+        <type>half</type>
+        <stem default-y=\"0\">up</stem>
+        <notations>
+          <tied type=\"stop\"/>
+        </notations>
+      </note>
+      <note default-x=\"84\">
+        <pitch>
+          <step>E</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>4</duration>
+        <voice>1</voice>
+        <type>half</type>
+        <stem default-y=\"-4.5\">up</stem>
+        <lyric default-y=\"-80\" number=\"1\">
+          <syllabic>middle</syllabic>
+          <text>mi</text>
+        </lyric>
+      </note>
+    </measure>
+    <!--=======================================================-->
+    <measure number=\"13\" width=\"129\">
+      <note default-x=\"13\">
+        <pitch>
+          <step>F</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>8</duration>
+        <voice>1</voice>
+        <type>whole</type>
+        <lyric default-y=\"-80\" number=\"1\">
+          <syllabic>end</syllabic>
+          <text>na</text>
+        </lyric>
+      </note>
+      <barline location=\"right\">
+        <bar-style>light-heavy</bar-style>
+      </barline>
+    </measure>
+  </part>
+  <!--=========================================================-->
+</score-partwise>
+"
+            } 
+        ]
+    }
+]
