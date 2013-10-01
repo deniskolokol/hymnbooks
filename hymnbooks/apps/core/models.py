@@ -61,8 +61,6 @@ class StringField200(StringFieldInternal):
         super(StringField200, self).__init__(*args, **kwargs)
 
 
-
-
 class MongoUser(User):
     """
     Subclass of mongoengine.django.auth.User with email as username
