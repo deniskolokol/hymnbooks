@@ -69,7 +69,7 @@ class MongoUser(User):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['password']
 
-    api_key = StringField(max_length=256, default='')
+    api_key = StringField(required=False, max_length=256, default='')
     api_key_created = DateTimeField(help_text=_(u'Created'))
 
     def save(self, *args, **kwargs):

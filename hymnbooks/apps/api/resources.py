@@ -4,7 +4,7 @@ from mongoengine import signals
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.models import create_api_key
 from tastypie.authorization import Authorization
-from tastypie.authentication import BasicAuthentication, ApiKeyAuthentication
+from tastypie.authentication import ApiKeyAuthentication
 from tastypie_mongoengine.fields import *
 from tastypie_mongoengine.resources import MongoEngineResource
 
@@ -12,7 +12,7 @@ from hymnbooks.apps.core import models, utils
 
 DATE_FILTERS = ('exact', 'lt', 'lte', 'gte', 'gt',)
 
-# Auto create API keys when user is saved.
+# Auto create API key when user is saved.
 signals.post_save.connect(create_api_key, sender=models.MongoUser)
 
 class CustomApiKeyAuthentication(ApiKeyAuthentication):
@@ -84,7 +84,7 @@ class FieldTypeResource(Resource):
         list_allowed_methods = ('get',)
         detail_allowed_methods = ()
         authorization = Authorization()
-        # authentication = BasicAuthentication()
+        authentication = CustomApiKeyAuthentication()
 
     def get_object_list(self, request):
         """
@@ -102,12 +102,13 @@ class FieldTypeResource(Resource):
         del bundle.data['resource_uri']
         return bundle
 
+
 class FieldDefinitionResource(MongoEngineResource):
     class Meta:
         object_class = models.FieldDefinition
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
         authorization = Authorization()
-        authentication = BasicAuthentication()
+        authentication = CustomApiKeyAuthentication()
 
 
 class SectionResource(MongoEngineResource):
@@ -126,7 +127,6 @@ class SectionResource(MongoEngineResource):
         excludes = ('id',)
         authorization = Authorization()
         authentication = CustomApiKeyAuthentication()
-        # authentication = BasicAuthentication()
 
     def hydrate(self, bundle):
         # Fill out `title` if not given
@@ -148,7 +148,7 @@ class ManuscriptContentResource(MongoEngineResource):
         object_class = models.ManuscriptContent
         allowed_methods = ('get', 'post')
         authorization = Authorization()
-        # authentication = BasicAuthentication()
+        authentication = CustomApiKeyAuthentication()
 
 
 class PieceResource(MongoEngineResource):
@@ -156,7 +156,7 @@ class PieceResource(MongoEngineResource):
         object_class = models.Piece
         allowed_methods = ('get', 'post')
         authorization = Authorization()
-        # authentication = BasicAuthentication()
+        authentication = CustomApiKeyAuthentication()
 
         
 class ManuscriptResource(MongoEngineResource):
@@ -184,4 +184,4 @@ class ManuscriptResource(MongoEngineResource):
             }
         excludes = ('id',)
         authorization = Authorization()
-        # authentication = BasicAuthentication()
+        authentication = CustomApiKeyAuthentication()
