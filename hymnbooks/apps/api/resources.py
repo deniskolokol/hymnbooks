@@ -10,7 +10,7 @@ from tastypie_mongoengine.resources import MongoEngineResource
 
 from hymnbooks.apps.core import models, utils
 
-DATE_FILTERS = ('exact', 'lt', 'lte', 'gte', 'gt',)
+DATE_FILTERS = ('exact', 'lt', 'lte', 'gte', 'gt', 'ne')
 
 # Auto create API key when user is saved.
 signals.post_save.connect(create_api_key, sender=models.MongoUser)
@@ -102,6 +102,20 @@ class FieldTypeResource(Resource):
         del bundle.data['resource_uri']
         return bundle
 
+class MongoUserResource(MongoEngineResource):
+    class Meta:
+        resource_name = 'user'
+        object_class = models.MongoUser
+        allowed_methods = ('get')
+        excludes = ('api_key', 'api_key_created', 'email', # WARNING! Re-write it when Authorization is ready
+                    'is_staff', 'is_superuser', 'password',) # (admins should see all fields!)
+        filtering = {
+            'is_active': ('exact', 'ne'),
+            'date_joined': DATE_FILTERS
+            }
+        authorization = Authorization()
+        authentication = CustomApiKeyAuthentication()
+
 
 class FieldDefinitionResource(MongoEngineResource):
     class Meta:
@@ -120,7 +134,7 @@ class SectionResource(MongoEngineResource):
         object_class = models.Section
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
         filtering = {
-            'status': ALL,
+            'status': ('exact', 'ne'),
             'created': DATE_FILTERS,
             'last_updated': DATE_FILTERS,
             }
@@ -132,13 +146,9 @@ class SectionResource(MongoEngineResource):
         # Fill out `title` if not given
         if 'title' not in bundle.data:
             bundle.data['title'] = None
-        if (bundle.data['title'] is None) or (
-                bundle.data['title'].strip() == ''):
-            try:
-                bundle.data['title'] = utils.slugify_downcode(
-                    bundle.data['help_text'])
-            except:
-                pass
+        if (bundle.data['title'] is None) or (bundle.data['title'].strip() == ''):
+            bundle.data['title'] = utils.slugify_downcode(
+                bundle.data['help_text'])
         return bundle
 
 
