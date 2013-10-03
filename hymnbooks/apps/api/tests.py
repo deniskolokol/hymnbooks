@@ -1,6 +1,7 @@
 # encoding:utf-8 #
 
 from mongoengine import connect, connection
+from mongoengine.context_managers import switch_db
 from mongoengine.django.auth import User
 
 from tastypie.test import ResourceTestCase
@@ -16,29 +17,44 @@ class MongoResourceTestCase(ResourceTestCase):
     Tastypie ResourceTestCase modified for mongoengine. Clears the collection
     between the tests.
     """
+    alias = 'test_db'
     db_name = 'test_%s' % settings.MONGO_DATABASE_NAME
     username = 'test_user'
     password = 'test_password'
     user_email = 'test@localhost.local'
 
+    def _authAsRoot(self, **kwargs):
+        db = connection.get_db(self.alias)
+        db.add_user(kwargs.get('username'),
+                    kwargs.get('password'),
+                    roles=['userAdmin'])
+        db.authenticate(kwargs.get('username'), kwargs.get('password'))
+
     def _pre_setup(self):
         connection.disconnect() # from the current db
-        connection.connect(self.db_name, **settings.MONGO_DATABASE_OPTIONS)
+        db_opts = dict((k, v) for k, v 
+                       in settings.MONGO_DATABASE_OPTIONS.iteritems() 
+                       if k in ['host', 'port'])
+        connect(self.db_name, self.alias, **db_opts)
+        self._authAsRoot(**settings.MONGO_DATABASE_OPTIONS)
+
         super(MongoResourceTestCase, self)._pre_setup()
 
     def _post_teardown(self):
-        current_connection = connection.get_connection()
+        current_connection = connection.get_connection(alias=self.alias)
+        self._authAsRoot(**settings.MONGO_DATABASE_OPTIONS)
         current_connection.drop_database(self.db_name)
-        connection.disconnect()
+        current_connection.disconnect()
 
         super(MongoResourceTestCase, self)._post_teardown()
 
     def setupUser(self):
-        self.user = models.MongoUser.create_user(self.username,
-                                                 self.password,
-                                                 self.user_email)
-        self.user.first_name, self.user.last_name = 'John Doe'.split()
-        self.user.save()
+        with switch_db(models.MongoUser, self.alias) as User:
+            self.user = User.create_user(self.username,
+                                         self.password,
+                                         self.user_email)
+            self.user.first_name, self.user.last_name = 'John Doe'.split()
+            self.user.save()
         return self.user
 
 
@@ -67,9 +83,6 @@ class FieldTypeResourceTest(ResourceTestCase):
 
 
 class SectionResourceTest(MongoResourceTestCase):
-    # Warning! Use Mixer to generate data!
-    fixtures = []
-
     def setUp(self):
         super(SectionResourceTest, self).setUp()
 
