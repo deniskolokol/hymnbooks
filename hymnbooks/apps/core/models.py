@@ -61,6 +61,14 @@ class StringField200(StringFieldInternal):
         super(StringField200, self).__init__(*args, **kwargs)
 
 
+class MissingDataError(Exception):
+    message = _(u'The following fields cannot be empty: %s')
+    
+    def __init__(self, fields):
+        self.message = self.message % ', '.join(fields)
+        Exception.__init__(self, self.message)
+
+
 class MongoUser(User):
     """
     Subclass of mongoengine.django.auth.User with email as username
@@ -166,9 +174,24 @@ class Section(TemplateGenericDocument):
     help_text = StringField(required=True, help_text=_(u'Label'))
     description = StringField(help_text=_(u'Description'))
     fields = ListField(EmbeddedDocumentField(FieldDefinition),
-                       required=True, help_text=_(u'Fields'))
+                       help_text=_(u'Fields'))
 
     meta = {'collection': 'metaSection'}
+
+    def save(self, *args, **kwargs):
+        """
+        Takes care of required fields.
+        """
+        required_fields = ('fields',)
+        empty_fields = []
+        if self.status == 'active':
+            empty_fields = [f for f in required_fields
+                            if (getattr(self, f) is None)
+                            or (len(getattr(self, f)) == 0)]
+        if len(empty_fields) > 0:
+            raise MissingDataError(empty_fields)    
+
+        super(Section, self).save(*args, **kwargs)
 
 
 class SectionData(EmbeddedDocument):
