@@ -1,12 +1,72 @@
 # -*- coding: utf-8 -*-
+from django.utils.translation import ugettext_lazy as _
 from django.template.defaultfilters import slugify
 
 import re
 
+"""
+Custom validators and exceptions.
+"""
+class MissingDataError(Exception):
+    message = _(u'The following fields cannot be empty: %s')
+    
+    def __init__(self, fields):
+        self.message = self.message % ', '.join(fields)
+        Exception.__init__(self, self.message)
+
+class FieldValidator(object):
+    """
+    Validates if fields are None or empty with given conditions.
+    """
+    @classmethod
+    def _check_if_empty(self, val):
+        if hasattr(val, '__getitem__'):
+            try:
+                if val.strip() == '':
+                    return True
+            except AttributeError:
+                if len(val) == 0:
+                    return True
+        else:
+            if len(str(val)) == 0:
+                return True
+        return False
+
+    @classmethod
+    def validate(self, obj, fields, **kwargs):
+        """
+        Conditions are defined by kwargs {fieldname: value}. There should be
+        at least one condition: {status: active}. Errors in conditions ignored.
+        """
+        if (not kwargs) or ('status' not in kwargs):
+            kwargs.update({'status': 'active'})
+
+        # Validate only if conditions set up right.
+        for k, v in kwargs.iteritems():
+            try:
+                if getattr(obj, k) != v:
+                    return
+            except AttributeError:
+                continue
+
+        empty = []
+        for f in fields:
+            value = getattr(obj, f)
+            if value is None:
+                empty.append(f)
+                continue
+
+            # Assume field can be empty, try different field types.
+            if self._check_if_empty(value):
+                empty.append(f)
+
+        if empty:
+            raise MissingDataError(empty)
+
 
 """
-Creating a unique slug depending on the document type.
-slugify_unique
+Custom procedure for unique slug depending on the document type.
+See slugify_unique
 """
 
 LATIN_MAP = {

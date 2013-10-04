@@ -61,14 +61,6 @@ class StringField200(StringFieldInternal):
         super(StringField200, self).__init__(*args, **kwargs)
 
 
-class MissingDataError(Exception):
-    message = _(u'The following fields cannot be empty: %s')
-    
-    def __init__(self, fields):
-        self.message = self.message % ', '.join(fields)
-        Exception.__init__(self, self.message)
-
-
 class MongoUser(User):
     """
     Subclass of mongoengine.django.auth.User with email as username
@@ -79,7 +71,7 @@ class MongoUser(User):
 
     api_key = StringField(required=False, max_length=256, default='')
     api_key_created = DateTimeField(help_text=_(u'Created'))
-
+    
     def save(self, *args, **kwargs):
         if not self.api_key:
             self.set_api_key()
@@ -102,7 +94,7 @@ class TemplateGenericDocument(Document):
     """
     Abstract class for all vocabulary-like documents.
     """
-    title = StringField(required=True, help_text=_(u'Title'))
+    title = StringField(required=True, unique=True, help_text=_(u'Title'))
     status = StringField(choices=DOCUMENT_STATUS, default='draft',
                          help_text=_(u'Status'))
     created = DateTimeField(help_text=_(u'Created'))
@@ -119,7 +111,7 @@ class TemplateGenericDocument(Document):
         if not self.created:
             self.created = datetime.now()
         self.last_updated = datetime.now()
-        
+
         super(TemplateGenericDocument, self).save(*args, **kwargs)
 
     def __unicode__(self):
@@ -137,11 +129,11 @@ class FieldDefinition(EmbeddedDocument):
       If `field_type` == 'embeddeddocument', `embedded_section` cannot be blank!
       It is equal to ListField(EmbeddedDocumentField(embedded_section.name)).
     """
-    field_name = StringField(required=True, help_text=_(u'Name'))
+    field_name = StringField(required=True, unique=True, help_text=_(u'Name'))
     field_type = StringField(required=True, help_text=_(u'Type'),
                              choices=FIELD_TYPE, default='string')
     embedded_section = ReferenceField('Section', help_text=_(u'Document type'))
-    help_text = StringField(required=True, help_text=_(u'Label'))
+    help_text = StringField(required=True, unique=True, help_text=_(u'Label'))
     default = DynamicField(help_text=_(u'Default value'))
     unique = BooleanField(required=True, default=False,
                           help_text=_(u'Unique values'))
@@ -152,15 +144,10 @@ class FieldDefinition(EmbeddedDocument):
     readonly = BooleanField(required=True, default=False,
                             help_text=_(u'Read-only'))
 
-    def save(self, *args, **kwargs):
-        """
-        Overrides save method: updates.
-        """
+    def clean(self):
         # Fill out `field_name` if not given
         if (self.field_name is None) or (self.field_name.strip() == ''):
             self.field_name = utils.slugify_downcode(self.help_text)
-
-        super(FieldDefinition, self).save(*args, **kwargs)
 
     def __unicode__(self):
         return u"%s (%s)" % (self.field_name, self.field_type)
@@ -179,25 +166,17 @@ class Section(TemplateGenericDocument):
     meta = {'collection': 'metaSection'}
 
     def save(self, *args, **kwargs):
-        """
-        Takes care of required fields.
-        """
-        required_fields = ('fields',)
-        empty_fields = []
-        if self.status == 'active':
-            empty_fields = [f for f in required_fields
-                            if (getattr(self, f) is None)
-                            or (len(getattr(self, f)) == 0)]
-        if len(empty_fields) > 0:
-            raise MissingDataError(empty_fields)    
+        utils.FieldValidator().validate(self, ('fields',))
 
         super(Section, self).save(*args, **kwargs)
-
+        
 
 class SectionData(EmbeddedDocument):
     """
+    Any additional data for any document that has `sections` attr.
+    The schema is described in `section` attr.
     """
-    data = ListField(DictField(), help_text=_(u'Data'))
+    data = ListField(DictField(), required=True, help_text=_(u'Data'))
     section = ReferenceField(Section, required=True,
                              help_text=_(u'Description'))
 
@@ -225,10 +204,8 @@ class GenericSlugDocument(GenericDocument):
     meta = {'abstract': True}
 
     def save(self, *args, **kwargs):
-        """
-        Takes care of unique slug value.
-        """
-        self.slug = utils.slugify_unique(self.title, self.__class__)
+        if (self.slug is None) or (self.slug.strip() == ''):
+            self.slug = utils.slugify_unique(self.title, self.__class__)
 
         super(GenericSlugDocument, self).save(*args, **kwargs)
 
@@ -286,9 +263,12 @@ class ManuscriptContent(GenericDocument, EmbeddedDocument):
     """
     Actual Manuscript content (scan parts and description).
     """
-    page_index = StringField50(required=True, help_text=_(u'Page index'))
+    page_index = StringField50(help_text=_(u'Page index'))
     page_description = StringField(help_text=_(u'Description'))
     image = ReferenceField(ContentImage)
+
+    def clean(self):
+        utils.FieldValidator().validate(self, ('page_index',))
 
 
 class Manuscript(GenericSlugDocument):
@@ -300,6 +280,9 @@ class Manuscript(GenericSlugDocument):
                         help_text=_(u'Content'))
     pieces = ListField(EmbeddedDocumentField(Piece), help_text=_(u'Pieces'))
     image = ListField(ReferenceField(ContentImage))
+
+    def clean(self):
+        utils.FieldValidator().validate(self, ('content',))
 
 
 def create_api_key(sender, **kwargs):

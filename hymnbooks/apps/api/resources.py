@@ -15,6 +15,28 @@ DATE_FILTERS = ('exact', 'lt', 'lte', 'gte', 'gt', 'ne')
 # Auto create API key when user is saved.
 signals.post_save.connect(create_api_key, sender=models.MongoUser)
 
+def ensure_slug(data, field, field_fro, obj_class=None):
+    """
+    Autofill slug-like field.
+    Slugify unique, if obj_class (reference to appropriate model class).
+    """
+    if field not in data:
+        data[field] = None
+    if (data[field] is None) or (data[field].strip() == ''):
+        try:
+            data[field] = utils.slugify_unique(data[field_fro],
+                                               obj_class,
+                                               slugfield=field)
+        except AttributeError:
+            # Either `obj_class` not specified or it doesn't have `.objects`.
+            data[field] = utils.slugify_downcode(data[field_fro])
+        except:
+            # In all other cases (like KeyError) simply leave data as is:
+            # Resource will through appropriate exception.
+            pass
+    return data
+
+
 class CustomApiKeyAuthentication(ApiKeyAuthentication):
     """
     Authenticates everyone if the request is GET otherwise performs
@@ -118,11 +140,21 @@ class MongoUserResource(MongoEngineResource):
 
 
 class FieldDefinitionResource(MongoEngineResource):
+    embedded_section = ReferenceField(
+        to='hymnbooks.apps.api.resources.SectionResource',
+        attribute='embedded_section', full=True, null=True)
+    
     class Meta:
         object_class = models.FieldDefinition
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
         authorization = Authorization()
         authentication = CustomApiKeyAuthentication()
+
+    def hydrate(self, bundle):
+        bundle.data = ensure_slug(bundle.data, 'field_name', 'help_text')
+        if 'embedded_section' in bundle.data:
+            bundle.data['field_type'] = 'embeddeddocument'
+        return bundle
 
 
 class SectionResource(MongoEngineResource):
@@ -139,16 +171,13 @@ class SectionResource(MongoEngineResource):
             'last_updated': DATE_FILTERS,
             }
         excludes = ('id',)
+        always_return_data = True
         authorization = Authorization()
         authentication = CustomApiKeyAuthentication()
 
     def hydrate(self, bundle):
-        # Fill out `title` if not given
-        if 'title' not in bundle.data:
-            bundle.data['title'] = None
-        if (bundle.data['title'] is None) or (bundle.data['title'].strip() == ''):
-            bundle.data['title'] = utils.slugify_downcode(
-                bundle.data['help_text'])
+        bundle.data = ensure_slug(bundle.data, 'title', 'help_text',
+                                  self.Meta.object_class)
         return bundle
 
 
@@ -181,12 +210,12 @@ class ManuscriptResource(MongoEngineResource):
         attribute='pieces', full=True, null=True)
     
     class Meta:
-        queryset = models.Manuscript.objects.all()
+        object_class = models.Manuscript
         # # WARNING! Specify allowed_methods after switching on Authorization and Authentication
         # allowed_methods = ('get', 'post', 'put', 'delete')
         # list_allowed_methods = ('get',)
         # detail_allowed_methods = ('get', 'post')
-        allowed_methods = ('get', 'post')
+        allowed_methods = ('get', 'post', 'patch', 'delete')
         filtering = {
             'status': ALL,
             'created': DATE_FILTERS,
@@ -195,3 +224,8 @@ class ManuscriptResource(MongoEngineResource):
         excludes = ('id',)
         authorization = Authorization()
         authentication = CustomApiKeyAuthentication()
+
+    def hydrate(self, bundle):
+        bundle.data = ensure_slug(bundle.data, 'slug', 'title',
+                                  self.Meta.object_class)
+        return bundle
