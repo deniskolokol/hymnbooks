@@ -1,19 +1,14 @@
-from mongoengine.django.auth import User
-from mongoengine import signals
+from mongoengine.django.auth import User, Group
 
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
-from tastypie.models import create_api_key
-from tastypie.authorization import Authorization
-from tastypie.authentication import ApiKeyAuthentication
 from tastypie_mongoengine.fields import *
 from tastypie_mongoengine.resources import MongoEngineResource
 
 from hymnbooks.apps.core import models, utils
+from hymnbooks.apps.api.auth import AppApiKeyAuthentication, AppAuthorization
+
 
 DATE_FILTERS = ('exact', 'lt', 'lte', 'gte', 'gt', 'ne')
-
-# Auto create API key when user is saved.
-signals.post_save.connect(create_api_key, sender=models.MongoUser)
 
 def ensure_slug(data, field, field_fro, obj_class=None):
     """
@@ -32,47 +27,9 @@ def ensure_slug(data, field, field_fro, obj_class=None):
             data[field] = utils.slugify_downcode(data[field_fro])
         except:
             # In all other cases (like KeyError) simply leave data as is:
-            # Resource will through appropriate exception.
+            # Resource will throw appropriate exception.
             pass
     return data
-
-
-class CustomApiKeyAuthentication(ApiKeyAuthentication):
-    """
-    Authenticates everyone if the request is GET otherwise performs
-    ApiKeyAuthentication.
-    """
-    def is_mongouser_authenticated(self, request):
-        """
-        Custom solution for MongoUser ApiKey authentication.
-        ApiKey here is not a class (as it is realized in ORM approach),
-        but a field MongoUser class.
-        """
-        username, api_key = super(CustomApiKeyAuthentication,
-                                  self).extract_credentials(request)
-        try:
-            models.MongoUser.objects.get(username=username, api_key=api_key)
-        except models.MongoUser.DoesNotExist:
-            return False
-
-        return True
-    
-    def is_authenticated(self, request, **kwargs):
-        """
-        Custom solution for `is_authenticated` function: MongoUsers has got
-        authenticated through custom api_key check.
-        """
-        if request.method == 'GET':
-            return True
-        try:
-            is_authenticated = super(CustomApiKeyAuthentication,
-                                     self).is_authenticated(request, **kwargs)
-        except TypeError as e:
-            if "MongoUser" in str(e):
-                is_authenticated = self.is_mongouser_authenticated(request)
-            else:
-                is_authenticated = False
-        return is_authenticated
 
     
 class BaseCategory(object):
@@ -105,8 +62,8 @@ class FieldTypeResource(Resource):
         resource_name = 'field_type'
         list_allowed_methods = ('get',)
         detail_allowed_methods = ()
-        authorization = Authorization()
-        authentication = CustomApiKeyAuthentication()
+        authorization = AppAuthorization()
+        authentication = AppApiKeyAuthentication()
 
     def get_object_list(self, request):
         """
@@ -129,14 +86,22 @@ class MongoUserResource(MongoEngineResource):
         resource_name = 'user'
         object_class = models.MongoUser
         allowed_methods = ('get')
-        excludes = ('api_key', 'api_key_created', 'email', # WARNING! Re-write it when Authorization is ready
+        excludes = ('api_key', 'api_key_created', 'email', # WARNING! Re-write it when AppAuthorization is ready
                     'is_staff', 'is_superuser', 'password',) # (admins should see all fields!)
         filtering = {
             'is_active': ('exact', 'ne'),
             'date_joined': DATE_FILTERS
             }
-        authorization = Authorization()
-        authentication = CustomApiKeyAuthentication()
+        authorization = AppAuthorization()
+        authentication = AppApiKeyAuthentication()
+
+
+class GroupResource(MongoEngineResource):
+    class Meta:
+        object_class = Group
+        allowed_methods = ('get')
+        authorization = AppAuthorization()
+        authentication = AppApiKeyAuthentication()    
 
 
 class FieldDefinitionResource(MongoEngineResource):
@@ -147,8 +112,8 @@ class FieldDefinitionResource(MongoEngineResource):
     class Meta:
         object_class = models.FieldDefinition
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
-        authorization = Authorization()
-        authentication = CustomApiKeyAuthentication()
+        authorization = AppAuthorization()
+        authentication = AppApiKeyAuthentication()
 
     def hydrate(self, bundle):
         bundle.data = ensure_slug(bundle.data, 'field_name', 'help_text')
@@ -172,8 +137,8 @@ class SectionResource(MongoEngineResource):
             }
         excludes = ('id',)
         always_return_data = True
-        authorization = Authorization()
-        authentication = CustomApiKeyAuthentication()
+        authorization = AppAuthorization()
+        authentication = AppApiKeyAuthentication()
 
     def hydrate(self, bundle):
         bundle.data = ensure_slug(bundle.data, 'title', 'help_text',
@@ -186,16 +151,16 @@ class ManuscriptContentResource(MongoEngineResource):
         resource_name = 'manuscript_content'
         object_class = models.ManuscriptContent
         allowed_methods = ('get', 'post')
-        authorization = Authorization()
-        authentication = CustomApiKeyAuthentication()
+        authorization = AppAuthorization()
+        authentication = AppApiKeyAuthentication()
 
 
 class PieceResource(MongoEngineResource):
     class Meta:
         object_class = models.Piece
         allowed_methods = ('get', 'post')
-        authorization = Authorization()
-        authentication = CustomApiKeyAuthentication()
+        authorization = AppAuthorization()
+        authentication = AppApiKeyAuthentication()
 
         
 class ManuscriptResource(MongoEngineResource):
@@ -208,13 +173,9 @@ class ManuscriptResource(MongoEngineResource):
     pieces = EmbeddedListField(
         of='hymnbooks.apps.api.resources.PieceResource',
         attribute='pieces', full=True, null=True)
-    
+
     class Meta:
         object_class = models.Manuscript
-        # # WARNING! Specify allowed_methods after switching on Authorization and Authentication
-        # allowed_methods = ('get', 'post', 'put', 'delete')
-        # list_allowed_methods = ('get',)
-        # detail_allowed_methods = ('get', 'post')
         allowed_methods = ('get', 'post', 'patch', 'delete')
         filtering = {
             'status': ALL,
@@ -222,8 +183,8 @@ class ManuscriptResource(MongoEngineResource):
             'last_updated': DATE_FILTERS,
             }
         excludes = ('id',)
-        authorization = Authorization()
-        authentication = CustomApiKeyAuthentication()
+        authorization = AppAuthorization()
+        authentication = AppApiKeyAuthentication()
 
     def hydrate(self, bundle):
         bundle.data = ensure_slug(bundle.data, 'slug', 'title',

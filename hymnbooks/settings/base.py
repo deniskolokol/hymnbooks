@@ -53,12 +53,6 @@ MIDDLEWARE_CLASSES = (
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
-ROOT_URLCONF = 'hymnbooks.urls'
-WSGI_APPLICATION = 'hymnbooks.wsgi.application'
-AUTHENTICATION_BACKENDS = (
-    'mongoengine.django.auth.MongoEngineBackend',
-)
-
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -84,6 +78,12 @@ INSTALLED_APPS = (
 
 AUTH_USER_MODEL = 'mongo_auth.MongoUser'
 MONGOENGINE_USER_DOCUMENT = 'mongoengine.django.auth.User'
+AUTHENTICATION_BACKENDS = (
+    'mongoengine.django.auth.MongoEngineBackend',
+)
+
+ROOT_URLCONF = 'hymnbooks.urls'
+WSGI_APPLICATION = 'hymnbooks.wsgi.application'
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to

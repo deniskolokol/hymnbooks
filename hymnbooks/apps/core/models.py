@@ -1,12 +1,10 @@
 from mongoengine import *
-from mongoengine.django.auth import User
+from mongoengine.django.auth import User, Permission, PermissionManager, ContentType
+
 from django.utils.translation import ugettext_lazy as _
 
 from datetime import datetime
 from hashlib import sha1
-import xmltodict
-import uuid
-import hmac
 
 from hymnbooks.apps.core import utils
 
@@ -71,7 +69,7 @@ class MongoUser(User):
 
     api_key = StringField(required=False, max_length=256, default='')
     api_key_created = DateTimeField(help_text=_(u'Created'))
-    
+
     def save(self, *args, **kwargs):
         if not self.api_key:
             self.set_api_key()
@@ -83,11 +81,22 @@ class MongoUser(User):
         self.api_key_created = datetime.now()
 
     def generate_key(self):
+        import uuid, hmac
+
         new_uuid = uuid.uuid4()
         return hmac.new(str(new_uuid), digestmod=sha1).hexdigest()
 
     def __unicode__(self):
         return u"%s, %s" % (self.username, self.api_key)
+
+
+class MongoUserProfile(Document):
+    """
+    Profiler for MongoUser class.
+    """
+    dummy = StringField()
+
+    meta = {'collection': 'adminUserProfile'}
 
 
 class TemplateGenericDocument(Document):
@@ -248,6 +257,8 @@ class Piece(GenericDocument, EmbeddedDocument):
         """
         Converts MusicXML to dictionary for indexing.
         """
+        import xmltodict
+
         if (self.scores_dict is None) or (self.scores_dict == ''):
             try:
                 self.scores_dict = xmltodict.parse(self.scores_mxml,
@@ -290,5 +301,5 @@ def create_api_key(sender, **kwargs):
     A signal for hooking up automatic ApiKey creation for MongoUser.
     """
     if kwargs.get('created', False) is True:
-        user = kwargs.get('instance', None)
+        user = kwargs.get('document', None)
         user.set_api_key()
