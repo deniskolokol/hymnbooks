@@ -1,8 +1,7 @@
-from mongoengine.django.auth import User, Group
-
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
-from tastypie_mongoengine.fields import *
+from tastypie.authorization import ReadOnlyAuthorization
 from tastypie_mongoengine.resources import MongoEngineResource
+from tastypie_mongoengine.fields import *
 
 from hymnbooks.apps.core import models, utils
 from hymnbooks.apps.api.auth import AppApiKeyAuthentication, AppAuthorization
@@ -32,9 +31,9 @@ def ensure_slug(data, field, field_fro, obj_class=None):
     return data
 
     
-class BaseCategory(object):
+class BaseChoiceList(object):
     """
-    Container class for list of categories. Id and name only.
+    Container class for list choice list. Id and name only.
     """
     id = None
     name = None
@@ -45,6 +44,10 @@ class BaseCategory(object):
         except:
             self.id = kwargs.get('id', None)
             self.name = kwargs.get('name', None)
+
+    @classmethod
+    def get_list(self, list_obj):
+        return [self(id=k, name=v) for k, v in dict(list_obj).iteritems()]
 
 
 class FieldTypeResource(Resource):
@@ -62,46 +65,79 @@ class FieldTypeResource(Resource):
         resource_name = 'field_type'
         list_allowed_methods = ('get',)
         detail_allowed_methods = ()
-        authorization = AppAuthorization()
+        authorization = ReadOnlyAuthorization()
         authentication = AppApiKeyAuthentication()
 
-    def get_object_list(self, request):
-        """
-        Populates Resource with data.
-        """
-        return [BaseCategory(id=k, name=v) for k, v in dict(models.FIELD_TYPE).iteritems()]
-
     def obj_get_list(self, request=None, **kwargs):
-        return self.get_object_list(request)
+        return BaseChoiceList.get_list(models.FIELD_TYPE)
 
     def dehydrate(self, bundle):
-        """
-        Final processing - get rid of resource_uri.
-        """
         del bundle.data['resource_uri']
         return bundle
 
-class MongoUserResource(MongoEngineResource):
+class PermissionResource(Resource):
+    """
+    Returns list of Global Permissions.
+    Serves informational purposes.
+    """
+    id = fields.CharField(attribute='id')
+    name = fields.CharField(attribute='name')
+
     class Meta:
-        resource_name = 'user'
+        resource_name = 'permission'
+        list_allowed_methods = ('get',)
+        detail_allowed_methods = ()
+        authorization = ReadOnlyAuthorization()
+        authentication = AppApiKeyAuthentication()
+
+    def obj_get_list(self, request=None, **kwargs):
+        return BaseChoiceList.get_list(models.PERMISSION_TYPE)
+
+    def dehydrate(self, bundle):
+        del bundle.data['resource_uri']
+        return bundle
+
+
+class UserResource(MongoEngineResource):
+    class Meta:
+        resource_name = 'admin_user'
         object_class = models.MongoUser
         allowed_methods = ('get')
         excludes = ('api_key', 'api_key_created', 'email', # WARNING! Re-write it when AppAuthorization is ready
                     'is_staff', 'is_superuser', 'password',) # (admins should see all fields!)
         filtering = {
+
+            #
+            # WARNING! Potential problem here: `username` is auth, while tastypie renders it as filter
+            #
+
+            'username': ALL,
             'is_active': ('exact', 'ne'),
             'date_joined': DATE_FILTERS
             }
         authorization = AppAuthorization()
         authentication = AppApiKeyAuthentication()
 
+class DocumentPermissionResource(MongoEngineResource):
+    class Meta:
+        object_class = models.GlobalPermission
+        allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
+        authorization = AppAuthorization()
+        authentication = AppApiKeyAuthentication()
+
 
 class GroupResource(MongoEngineResource):
+    permissions = EmbeddedListField(
+        of='hymnbooks.apps.api.resources.DocumentPermissionResource',
+        attribute='permissions', full=True, null=True)
+
     class Meta:
-        object_class = Group
-        allowed_methods = ('get')
+        object_class = models.MongoGroup
+        resource_name = 'admin_group'
+        excludes = ('id', )
+        allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
         authorization = AppAuthorization()
-        authentication = AppApiKeyAuthentication()    
+        authentication = AppApiKeyAuthentication()
 
 
 class FieldDefinitionResource(MongoEngineResource):

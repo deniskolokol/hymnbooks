@@ -1,5 +1,5 @@
 from mongoengine import *
-from mongoengine.django.auth import User, Permission, PermissionManager, ContentType
+from mongoengine.django.auth import User
 
 from django.utils.translation import ugettext_lazy as _
 
@@ -7,16 +7,6 @@ from datetime import datetime
 from hashlib import sha1
 
 from hymnbooks.apps.core import utils
-
-"""
-Dynamic fields type:
-* `number` field types generalized to float.
-* `embeddeddocument` can only be documents of the type `Section`.
-"""
-FIELD_TYPE = (('string', _('String values')),
-              ('float', _('Number values')),
-              ('boolean', _('True of False')),
-              ('embeddeddocument', _('Document type')))
 
 """
 Document status:
@@ -35,6 +25,7 @@ DOCUMENT_STATUS = (('draft', _('Draft')),
                    ('suspended', _('Suspended')),
                    ('deleted', _('Deleted')))
 
+# CUSTOM TYPES
 
 class StringFieldInternal(StringField):
     def __init__(self, *args, **kwargs):
@@ -59,6 +50,80 @@ class StringField200(StringFieldInternal):
         super(StringField200, self).__init__(*args, **kwargs)
 
 
+# AUTHENTICATION AND AUTHORIZATION CLASSES
+"""
+Permission types that fit API requirements.
+"""
+PERMISSION_TYPE = (('create_detail', _('Create detail')),
+                   ('create_list', _('Create list')),
+                   ('read_list', _('Read list')),
+                   ('read_detail', _('Read detail')),
+                   ('update_list', _('Update list')),
+                   ('update_detail', _('Update detail')),
+                   ('delete_list', _('Delete list')),
+                   ('delete_detail', _('Delete detail')))
+
+"""
+Document Types that should be defined on Permissions (analog of 
+django's content_type). The class name of every Document, that is
+not embedded, should be registered here.
+"""
+DOCUMENT_TYPE = (('MongoGroup', _('Group')),
+                 ('MongoUser', _('User')),
+                 ('MongoUserProfile', _('User profile')),
+                 ('Section', _('Data section')),
+                 ('ContentImage', _('Image')),
+                 ('Manuscript', _('Manuscript')))
+
+
+class GlobalPermission(EmbeddedDocument):
+    """
+    Permission that can be (but does not require being)
+    attached to Document Type.
+    """
+    permission = StringField(required=True, choices=PERMISSION_TYPE,
+                             help_text=_(u'Users can'))
+    document_type = StringField(choices=DOCUMENT_TYPE,
+                                help_text=_(u'Defined on'))
+
+    def __unicode__(self):
+        return u"can %s for %s" % (self.permission, self.document_type)
+
+
+class MongoGroup(Document):
+    """
+    Group maps MongoUsers to Permissions.
+    """
+    name = StringField(required=True, unique=True, help_text=_(u'Name'))
+    permissions = ListField(EmbeddedDocumentField(GlobalPermission),
+                            help_text=_(u'Permissions'))
+
+    meta = {'collection': 'adminGroup'}
+
+    def __unicode__(self):
+        return self.name
+
+    def has_permission(self, permission):
+        return all(utils.ensure_list(permission) in self.permissions)
+
+    def ensure_permission(self, permission):
+        if not self.has_permission(permission):
+            self.permissions.extend(utils.ensure_list(permission))
+
+    def save(self, *args, **kwargs):
+        """
+        Take care of duplicates in the permissions, on all fields. Doesn't
+        depend on the structure of Permission.
+        """
+        permissions_clean = set([tuple(p.__dict__['_data'].items())
+                                 for p in self.permissions])
+        permissions_dicts = [dict((m[0], m[1]) for m in l)
+                             for l in permissions_clean]
+        self.permissions = [GlobalPermission(**kw) for kw in permissions_dicts]
+
+        super(MongoGroup, self).save(*args, **kwargs)
+
+
 class MongoUser(User):
     """
     Subclass of mongoengine.django.auth.User with email as username
@@ -69,12 +134,13 @@ class MongoUser(User):
 
     api_key = StringField(required=False, max_length=256, default='')
     api_key_created = DateTimeField(help_text=_(u'Created'))
+    group = ListField(ReferenceField(MongoGroup))
 
     def save(self, *args, **kwargs):
         if not self.api_key:
             self.set_api_key()
 
-        return super(MongoUser, self).save(*args, **kwargs)
+        super(MongoUser, self).save(*args, **kwargs)
 
     def set_api_key(self):
         self.api_key = self.generate_key()
@@ -87,7 +153,7 @@ class MongoUser(User):
         return hmac.new(str(new_uuid), digestmod=sha1).hexdigest()
 
     def __unicode__(self):
-        return u"%s, %s" % (self.username, self.api_key)
+        return u"%s (%s)" % (self.username, self.get_full_name())
 
 
 class MongoUserProfile(Document):
@@ -98,6 +164,17 @@ class MongoUserProfile(Document):
 
     meta = {'collection': 'adminUserProfile'}
 
+
+# DOCUMENT TEMPLATES
+"""
+Dynamic fields type:
+* `number` field types generalized to float.
+* `embeddeddocument` can only be documents of the type `Section`.
+"""
+FIELD_TYPE = (('string', _('String values')),
+              ('float', _('Number values')),
+              ('boolean', _('True of False')),
+              ('embeddeddocument', _('Document type')))
 
 class TemplateGenericDocument(Document):
     """
@@ -126,6 +203,37 @@ class TemplateGenericDocument(Document):
     def __unicode__(self):
         return self.title
 
+    
+class GenericDocument(TemplateGenericDocument):
+    """
+    Abstract class for all vocabulary-like documents with additional data
+    stored in `data` field as a free-form dictionary.
+
+    The structure of the dictionary: 1st level keys are names of Sections,
+    followed by the list of values of the fields.
+    """
+    sections = ListField(EmbeddedDocumentField('SectionData'),
+                         help_text=_(u'Sections'))
+
+    meta = {'abstract': True}
+
+
+class GenericSlugDocument(GenericDocument):
+    """
+    Abstract class for all vocabularies with slugs.
+    """
+    slug = StringField(unique=True, help_text=_(u'Slug'))
+
+    meta = {'abstract': True}
+
+    def save(self, *args, **kwargs):
+        if (self.slug is None) or (self.slug.strip() == ''):
+            self.slug = utils.slugify_unique(self.title, self.__class__)
+
+        super(GenericSlugDocument, self).save(*args, **kwargs)
+
+
+# MODERATOR'S DOCUMENTS
 
 class FieldDefinition(EmbeddedDocument):
     """
@@ -189,35 +297,8 @@ class SectionData(EmbeddedDocument):
     section = ReferenceField(Section, required=True,
                              help_text=_(u'Description'))
 
-    
-class GenericDocument(TemplateGenericDocument):
-    """
-    Abstract class for all vocabulary-like documents with additional data
-    stored in `data` field as a free-form dictionary.
 
-    The structure of the dictionary: 1st level keys are names of Sections,
-    followed by the list of values of the fields.
-    """
-    sections = ListField(EmbeddedDocumentField(SectionData),
-                         help_text=_(u'Sections'))
-
-    meta = {'abstract': True}
-
-
-class GenericSlugDocument(GenericDocument):
-    """
-    Abstract class for all vocabularies with slugs.
-    """
-    slug = StringField(unique=True, help_text=_(u'Slug'))
-
-    meta = {'abstract': True}
-
-    def save(self, *args, **kwargs):
-        if (self.slug is None) or (self.slug.strip() == ''):
-            self.slug = utils.slugify_unique(self.title, self.__class__)
-
-        super(GenericSlugDocument, self).save(*args, **kwargs)
-
+# END-USER DATA DOCUMENTS
 
 class ContentImage(GenericDocument):
     """
@@ -295,6 +376,8 @@ class Manuscript(GenericSlugDocument):
     def clean(self):
         utils.FieldValidator().validate(self, ('content',))
 
+
+# SIGNALS
 
 def create_api_key(sender, **kwargs):
     """

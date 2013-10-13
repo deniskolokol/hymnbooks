@@ -8,8 +8,9 @@ v1_api = Api(api_name='v1')
 v1_api.register(FieldTypeResource())
 v1_api.register(SectionResource())
 v1_api.register(ManuscriptResource())
-v1_api.register(MongoUserResource())
+v1_api.register(UserResource())
 v1_api.register(GroupResource())
+v1_api.register(PermissionResource())
 
 urlpatterns = patterns('',
    (r'^', include(v1_api.urls)),

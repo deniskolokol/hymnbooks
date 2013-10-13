@@ -2,6 +2,7 @@
 from django.utils.translation import ugettext_lazy as _
 from django.template.defaultfilters import slugify
 
+import collections
 import re
 
 """
@@ -188,3 +189,32 @@ def slugify_unique(value, doc, slugfield="slug"):
 """
 slugify_unique - end
 """
+
+# VARIOUS UTILS
+
+def flatten(lst):
+    # WARNING! Finish it so that it would be real flatten (for dictionaries - not just keys)
+    for element in lst:
+        if isinstance(element, collections.Iterable) and \
+          not isinstance(element, basestring):
+            for sub in flatten(element):
+                yield sub
+        else:
+            yield element
+
+
+def ensure_list(val):
+    """
+    Convert strings, floats, etc. to list.
+    """
+    try:
+        return [float(val)]
+    except ValueError:
+        if hasattr(val, '__getitem__') and (not hasattr(val, '__iter__')):
+            return [val] # string
+        elif hasattr(val, '__getitem__') and hasattr(val, '__iter__'):
+            if isinstance(val, dict):
+                return [l for l in flatten(val)]
+            return list(val)
+    except: # unsuccessfull!
+        return []
