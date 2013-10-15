@@ -11,6 +11,7 @@ v1_api.register(ManuscriptResource())
 v1_api.register(UserResource())
 v1_api.register(GroupResource())
 v1_api.register(PermissionResource())
+v1_api.register(DocumentTypeResource())
 
 urlpatterns = patterns('',
    (r'^', include(v1_api.urls)),

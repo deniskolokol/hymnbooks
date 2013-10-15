@@ -4,10 +4,35 @@ from tastypie_mongoengine.resources import MongoEngineResource
 from tastypie_mongoengine.fields import *
 
 from hymnbooks.apps.core import models, utils
-from hymnbooks.apps.api.auth import AppApiKeyAuthentication, AppAuthorization
+from hymnbooks.apps.api.auth import *
 
 
 DATE_FILTERS = ('exact', 'lt', 'lte', 'gte', 'gt', 'ne')
+
+
+def remove_duplicates(data):
+    return dict((k, list(set(v))) if isinstance(v, list) else (k, v)
+                for k, v in data.iteritems())
+
+
+def hydrate_ref_list(obj, lst, field, action, uri):
+    """
+    Takes care of parameters with keywords (e.g. fieldname__append 
+    or fieldname__delete).
+    """
+    uri_list = list()
+    obj_list = getattr(obj, field)
+
+    for element in obj_list:
+        uri_list.append("%s%s/" % (uri, str(element.id)))
+
+    if action == 'append':
+        lst.extend(uri_list)
+    elif action == 'delete':
+        lst = [l for l in uri_list if l not in lst]
+
+    return lst
+
 
 def ensure_slug(data, field, field_fro, obj_class=None):
     """
@@ -77,8 +102,7 @@ class FieldTypeResource(Resource):
 
 class PermissionResource(Resource):
     """
-    Returns list of Global Permissions.
-    Serves informational purposes.
+    Returns list of Global Permissions. Serves informational purposes.
     """
     id = fields.CharField(attribute='id')
     name = fields.CharField(attribute='name')
@@ -97,32 +121,37 @@ class PermissionResource(Resource):
         del bundle.data['resource_uri']
         return bundle
 
+    
+class DocumentTypeResource(Resource):
+    """
+    Returns list of Document types. Serves informational purposes.
+    """
+    id = fields.CharField(attribute='id')
+    name = fields.CharField(attribute='name')
 
-class UserResource(MongoEngineResource):
     class Meta:
-        resource_name = 'admin_user'
-        object_class = models.MongoUser
-        allowed_methods = ('get')
-        excludes = ('api_key', 'api_key_created', 'email', # WARNING! Re-write it when AppAuthorization is ready
-                    'is_staff', 'is_superuser', 'password',) # (admins should see all fields!)
-        filtering = {
-
-            #
-            # WARNING! Potential problem here: `username` is auth, while tastypie renders it as filter
-            #
-
-            'username': ALL,
-            'is_active': ('exact', 'ne'),
-            'date_joined': DATE_FILTERS
-            }
-        authorization = AppAuthorization()
+        resource_name = 'document_type'
+        list_allowed_methods = ('get',)
+        detail_allowed_methods = ()
+        authorization = ReadOnlyAuthorization()
         authentication = AppApiKeyAuthentication()
+
+    def obj_get_list(self, request=None, **kwargs):
+        return BaseChoiceList.get_list(models.DOCUMENT_TYPE)
+
+    def dehydrate(self, bundle):
+        del bundle.data['resource_uri']
+        return bundle
+
 
 class DocumentPermissionResource(MongoEngineResource):
     class Meta:
         object_class = models.GlobalPermission
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
-        authorization = AppAuthorization()
+
+        # WARNING! Update after testing!
+        # authorization = AppAuthorization()
+        authorization = AnyoneCanViewAuthorization()
         authentication = AppApiKeyAuthentication()
 
 
@@ -136,8 +165,63 @@ class GroupResource(MongoEngineResource):
         resource_name = 'admin_group'
         excludes = ('id', )
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
-        authorization = AppAuthorization()
+
+        # WARNING! Update after testing!
+        # authorization = AppAuthorization()
+        authorization = AnyoneCanViewAuthorization()
         authentication = AppApiKeyAuthentication()
+
+
+class UserResource(MongoEngineResource):
+    group = ReferencedListField(
+        of='hymnbooks.apps.api.resources.GroupResource',
+        attribute='group', full=True, null=True)
+    permissions = EmbeddedListField(
+        of='hymnbooks.apps.api.resources.DocumentPermissionResource',
+        attribute='permissions', full=True, null=True)
+
+    class Meta:
+        resource_name = 'admin_user'
+        object_class = models.MongoUser
+        allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
+        excludes = ('id', 'api_key', 'api_key_created', 'email', # WARNING! Re-write it when AppAuthorization is ready
+                    'is_staff', 'is_superuser', 'password',) # (admins should see all fields!)
+        filtering = {
+
+            #
+            # WARNING! Potential problem here: `username` is auth, while tastypie renders it as filter
+            #
+
+            'username': ALL,
+            'is_active': ('exact', 'ne'),
+            'date_joined': DATE_FILTERS
+            }
+
+        # WARNING! Update after testing!
+        # authorization = AppAuthorization()
+        authorization = AnyoneCanViewAuthorization()
+        authentication = AppApiKeyAuthentication()
+
+    def hydrate(self, bundle):
+        action_params = dict((k, v) for k, v in bundle.data.iteritems()
+                             if '__' in k)
+        if action_params:
+            for param in action_params:
+                field_name, field_action = param.split('__')
+                field = getattr(self, field_name)
+                ref_list = bundle.data.pop(param)
+                related = field.get_related_resource(self)
+                clean_list = hydrate_ref_list(obj=bundle.obj,
+                                              lst=ref_list,
+                                              field=field.attribute,
+                                              action=field_action,
+                                              uri=related.get_resource_uri())
+                bundle.data[field_name] = clean_list
+
+        # Remove duplicates.
+        bundle.data = remove_duplicates(bundle.data)
+
+        return bundle
 
 
 class FieldDefinitionResource(MongoEngineResource):
@@ -148,7 +232,10 @@ class FieldDefinitionResource(MongoEngineResource):
     class Meta:
         object_class = models.FieldDefinition
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
-        authorization = AppAuthorization()
+
+        # WARNING! Update after testing!
+        # authorization = AppAuthorization()
+        authorization = AnyoneCanViewAuthorization()
         authentication = AppApiKeyAuthentication()
 
     def hydrate(self, bundle):
@@ -173,7 +260,10 @@ class SectionResource(MongoEngineResource):
             }
         excludes = ('id',)
         always_return_data = True
-        authorization = AppAuthorization()
+
+        # WARNING! Update after testing!
+        # authorization = AppAuthorization()
+        authorization = AnyoneCanViewAuthorization()
         authentication = AppApiKeyAuthentication()
 
     def hydrate(self, bundle):
@@ -187,7 +277,7 @@ class ManuscriptContentResource(MongoEngineResource):
         resource_name = 'manuscript_content'
         object_class = models.ManuscriptContent
         allowed_methods = ('get', 'post')
-        authorization = AppAuthorization()
+        authorization = AnyoneCanViewAuthorization()
         authentication = AppApiKeyAuthentication()
 
 
@@ -195,7 +285,7 @@ class PieceResource(MongoEngineResource):
     class Meta:
         object_class = models.Piece
         allowed_methods = ('get', 'post')
-        authorization = AppAuthorization()
+        authorization = AnyoneCanViewAuthorization()
         authentication = AppApiKeyAuthentication()
 
         
@@ -219,7 +309,7 @@ class ManuscriptResource(MongoEngineResource):
             'last_updated': DATE_FILTERS,
             }
         excludes = ('id',)
-        authorization = AppAuthorization()
+        authorization = AnyoneCanViewAuthorization()
         authentication = AppApiKeyAuthentication()
 
     def hydrate(self, bundle):

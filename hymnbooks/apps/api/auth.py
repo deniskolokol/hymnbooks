@@ -76,34 +76,51 @@ class AppApiKeyAuthentication(ApiKeyAuthentication):
             is_authenticated = True
         return is_authenticated
 
+class AnyoneCanViewAuthorization(Authorization):
+    """
+    Custom authorization for documents that can be viewed by anyone,
+    but require Authentification and Authorization for updates.
+    """
+    def read_list(self, object_list, bundle):
+        return object_list.all()
+
+    def read_detail(self, object_list, bundle):
+        return True
+
+    def create_detail(self, object_list, bundle):
+        if bundle.request.user.is_anonymous():
+            return False
+        usr = bundle.request.user
+        return (usr.is_active() and usr.has_perm(object_list._document._class_name)) or usr.is_superuser()
+    
 
 class AppAuthorization(Authorization):
     """
     Custom authorization using permissions.
     """
-    def __init__(self, *args, **kwargs):
-        """
-        Warning! Dummy for the development period!
-        Delete after testing.
-        """
-        super(AppAuthorization, self).__init__(*args, **kwargs)
-
-    def create_detail(self, object_list, bundle):
+    def read_list(self, object_list, bundle):
+        # This assumes a ``QuerySet`` from ``ModelResource``.
+        try:
+            if bundle.request.user.has_perm(object_list.__class__):
+                return object_list.all()
+            else:
+                return object_list.filter(created_by=bundle.request.user)
+        except TypeError:
+            # Un-authenticated user.
+            pass
         print bundle.obj, type(bundle.obj)
-        return True
-        # return bundle.obj.created_by == bundle.request.user
-
-    # def create_list(self, object_list, bundle):
-    #     # Create list is auto-assigned to ``user``.
-    #     return object_list
-
-    # def read_list(self, object_list, bundle):
-    #     # This assumes a ``QuerySet`` from ``ModelResource``.
-    #     return object_list.filter(created_by=bundle.request.user)
+        # return object_list.filter(created_by=bundle.request.user)
 
     # def read_detail(self, object_list, bundle):
     #     # Is the requested object owned by the user?
     #     return bundle.obj.created_by == bundle.request.user
+
+    # def create_detail(self, object_list, bundle):
+    #     return bundle.obj.created_by == bundle.request.user
+
+    # def create_list(self, object_list, bundle):
+    #     # Create list is auto-assigned to ``user``.
+    #     return object_list
 
     # def update_list(self, object_list, bundle):
     #     allowed = []

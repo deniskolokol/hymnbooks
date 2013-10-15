@@ -135,6 +135,8 @@ class MongoUser(User):
     api_key = StringField(required=False, max_length=256, default='')
     api_key_created = DateTimeField(help_text=_(u'Created'))
     group = ListField(ReferenceField(MongoGroup))
+    permissions = ListField(EmbeddedDocumentField(GlobalPermission),
+                            help_text=_(u'Personal access'))
 
     def save(self, *args, **kwargs):
         if not self.api_key:
@@ -151,6 +153,13 @@ class MongoUser(User):
 
         new_uuid = uuid.uuid4()
         return hmac.new(str(new_uuid), digestmod=sha1).hexdigest()
+
+    def has_perm(self, permission, content_type):
+        for group in self.group:
+            if group.has_perm(permission, content_type):
+                return True
+
+        # if self.permissions.
 
     def __unicode__(self):
         return u"%s (%s)" % (self.username, self.get_full_name())
