@@ -49,10 +49,8 @@ def ensure_slug(data, field, field_fro, obj_class=None):
         except AttributeError:
             # Either `obj_class` not specified or it doesn't have `.objects`.
             data[field] = utils.slugify_downcode(data[field_fro])
-        except:
-            # In all other cases (like KeyError) simply leave data as is:
-            # Resource will throw appropriate exception.
-            pass
+        except:  # In all other cases (e.g. KeyError) leave data as is:
+            pass # Resource will throw appropriate exception.
     return data
 
     
@@ -149,10 +147,8 @@ class DocumentPermissionResource(MongoEngineResource):
         object_class = models.GlobalPermission
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
 
-        # WARNING! Update after testing!
-        # authorization = AppAuthorization()
-        authorization = AnyoneCanViewAuthorization()
         authentication = AppApiKeyAuthentication()
+        authorization = StaffAuthorization()
 
 
 class GroupResource(MongoEngineResource):
@@ -166,10 +162,8 @@ class GroupResource(MongoEngineResource):
         excludes = ('id', )
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
 
-        # WARNING! Update after testing!
-        # authorization = AppAuthorization()
-        authorization = AnyoneCanViewAuthorization()
         authentication = AppApiKeyAuthentication()
+        authorization = StaffAuthorization()
 
 
 class UserResource(MongoEngineResource):
@@ -187,20 +181,12 @@ class UserResource(MongoEngineResource):
         excludes = ('id', 'api_key', 'api_key_created', 'email', # WARNING! Re-write it when AppAuthorization is ready
                     'is_staff', 'is_superuser', 'password',) # (admins should see all fields!)
         filtering = {
-
-            #
-            # WARNING! Potential problem here: `username` is auth, while tastypie renders it as filter
-            #
-
-            'username': ALL,
+            'username': ALL, # Filters are tuned to handle Authentication in the URL.
             'is_active': ('exact', 'ne'),
             'date_joined': DATE_FILTERS
             }
-
-        # WARNING! Update after testing!
-        # authorization = AppAuthorization()
-        authorization = AnyoneCanViewAuthorization()
         authentication = AppApiKeyAuthentication()
+        authorization = StaffAuthorization()
 
     def hydrate(self, bundle):
         action_params = dict((k, v) for k, v in bundle.data.iteritems()
@@ -223,6 +209,18 @@ class UserResource(MongoEngineResource):
 
         return bundle
 
+    def build_filters(self, filters=None):
+        if filters is None:
+            filters = {}
+
+        # Eliminate `username` from filters. If there is necessity to
+        # filter by username, `username__exact` should be used!
+        if 'username' in filters.keys():
+            del filters['username']
+
+        orm_filters = super(UserResource, self).build_filters(filters)
+
+        return orm_filters
 
 class FieldDefinitionResource(MongoEngineResource):
     embedded_section = ReferenceField(
@@ -233,9 +231,7 @@ class FieldDefinitionResource(MongoEngineResource):
         object_class = models.FieldDefinition
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
 
-        # WARNING! Update after testing!
-        # authorization = AppAuthorization()
-        authorization = AnyoneCanViewAuthorization()
+        authorization = AppAuthorization()
         authentication = AppApiKeyAuthentication()
 
     def hydrate(self, bundle):
@@ -261,32 +257,30 @@ class SectionResource(MongoEngineResource):
         excludes = ('id',)
         always_return_data = True
 
-        # WARNING! Update after testing!
-        # authorization = AppAuthorization()
-        authorization = AnyoneCanViewAuthorization()
+        authorization = AppAuthorization()
         authentication = AppApiKeyAuthentication()
 
     def hydrate(self, bundle):
         bundle.data = ensure_slug(bundle.data, 'title', 'help_text',
                                   self.Meta.object_class)
         return bundle
-
+    
 
 class ManuscriptContentResource(MongoEngineResource):
     class Meta:
         resource_name = 'manuscript_content'
         object_class = models.ManuscriptContent
         allowed_methods = ('get', 'post')
-        authorization = AnyoneCanViewAuthorization()
         authentication = AppApiKeyAuthentication()
+        authorization = AnyoneCanViewAuthorization()
 
 
 class PieceResource(MongoEngineResource):
     class Meta:
         object_class = models.Piece
         allowed_methods = ('get', 'post')
-        authorization = AnyoneCanViewAuthorization()
         authentication = AppApiKeyAuthentication()
+        authorization = AnyoneCanViewAuthorization()
 
         
 class ManuscriptResource(MongoEngineResource):
@@ -309,8 +303,8 @@ class ManuscriptResource(MongoEngineResource):
             'last_updated': DATE_FILTERS,
             }
         excludes = ('id',)
-        authorization = AnyoneCanViewAuthorization()
         authentication = AppApiKeyAuthentication()
+        authorization = AnyoneCanViewAuthorization()
 
     def hydrate(self, bundle):
         bundle.data = ensure_slug(bundle.data, 'slug', 'title',

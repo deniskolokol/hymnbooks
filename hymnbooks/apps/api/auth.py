@@ -1,3 +1,5 @@
+from django.utils.translation import ugettext_lazy as _
+
 from tastypie.authentication import ApiKeyAuthentication
 from tastypie.authorization import Authorization
 from tastypie.exceptions import Unauthorized
@@ -5,11 +7,16 @@ from tastypie.exceptions import Unauthorized
 from mongoengine import signals
 
 from hymnbooks.apps.core import utils
-from hymnbooks.apps.core.models import MongoUser, create_api_key
+from hymnbooks.apps.core.models import MongoUser, MongoGroup, \
+     create_api_key, control_permissions
 
 
 # Auto create API key when user is saved.
 signals.post_save.connect(create_api_key, sender=MongoUser)
+
+# Control permissions duplicates.
+signals.post_save.connect(control_permissions, sender=MongoUser)
+signals.post_save.connect(control_permissions, sender=MongoGroup)
 
 
 class AppApiKeyAuthentication(ApiKeyAuthentication):
@@ -76,7 +83,155 @@ class AppApiKeyAuthentication(ApiKeyAuthentication):
             is_authenticated = True
         return is_authenticated
 
-class AnyoneCanViewAuthorization(Authorization):
+
+class StaffAuthorization(Authorization):
+    """
+    Class for staff authorization.
+    """
+    def read_list(self, object_list, bundle):
+        # This assumes a ``QuerySet`` from ``ModelResource``.
+        try:
+            if bundle.request.user.is_superuser or bundle.request.user.is_staff:
+                return object_list.all()
+            else:
+                return []
+        except AttributeError:
+            raise Unauthorized(_('You have to authenticate first!'))
+        
+    def read_detail(self, object_list, bundle):
+        try:
+            return bundle.request.user.is_superuser or bundle.request.user.is_staff
+        except AttributeError:
+            raise Unauthorized(_('You have to authenticate first!'))
+
+    def create_list(self, object_list, bundle):
+        try:
+            if bundle.request.user.is_superuser or bundle.request.user.is_staff:
+                return object_list
+        except AttributeError:
+            raise Unauthorized(_('You have to authenticate first!'))
+
+    def create_detail(self, object_list, bundle):
+        try:
+            return bundle.request.user.is_superuser or bundle.request.user.is_staff
+        except AttributeError:
+            raise Unauthorized(_('You have to authenticate first!'))
+
+    def update_detail(self, object_list, bundle):
+        try:
+            return bundle.request.user.is_superuser or bundle.request.user.is_staff
+        except AttributeError:
+            raise Unauthorized(_('You have to authenticate first!'))
+
+    def update_list(self, object_list, bundle):
+        try:
+            if bundle.request.user.is_superuser or bundle.request.user.is_staff:
+                return object_list
+        except AttributeError:
+            raise Unauthorized(_('You have to authenticate first!'))
+
+    def delete_list(self, object_list, bundle):
+        """
+        Only superuser can delete lists!
+        """
+        try:
+            if bundle.request.user.is_superuser or bundle.request.user.is_staff:
+                return object_list
+        except AttributeError:
+            raise Unauthorized(_('You have to authenticate first!'))
+
+    def delete_detail(self, object_list, bundle):
+        """
+        If user has permissions to delete detail, it can only 
+        delete those ctreated by him.
+        """
+        try:
+            return bundle.request.user.is_superuser or bundle.request.user.is_staff
+        except AttributeError:
+            raise Unauthorized(_('You have to authenticate first!'))
+
+
+class AppAuthorization(Authorization):
+    """
+    Custom authorization using permissions only:
+
+    * Updates and deletes allowed to superuser
+
+    * In other cases, even if User has permissions on a particular
+      document_type, he can only update and delete his documents.
+    """    
+    def read_list(self, object_list, bundle):
+        # This assumes a ``QuerySet`` from ``ModelResource``.
+        user = bundle.request.user
+        document_type = object_list._document._class_name
+        user_has_permissions = False
+        try:
+            if user.is_superuser:
+                return object_list.all()
+            elif user.has_permission('read_list', document_type):
+                return object_list.filter(created_by__exact=user)
+            else:
+                return []
+        except AttributeError:
+            raise Unauthorized(_('You have to authenticate first!'))
+        
+    def read_detail(self, object_list, bundle):
+        return bundle.request.user.is_superuser or \
+          bundle.request.user.has_permission('read_detail',
+                                             object_list._document._class_name)
+
+    def create_detail(self, object_list, bundle):
+        try:
+            return bundle.request.user.is_superuser \
+              or bundle.request.user.has_permission('create_detail',
+                                                    object_list._document._class_name)
+        except AttributeError:
+            raise Unauthorized(_('You have to authenticate first!'))
+
+    def create_list(self, object_list, bundle):
+        return object_list
+
+    def update_detail(self, object_list, bundle):
+        return bundle.request.user.is_superuser or \
+          (bundle.request.user.has_permission('update_detail',
+                                              object_list._document._class_name)
+              and bundle.request.user == object_list.created_by)
+
+    def update_list(self, object_list, bundle):
+        allowed = []
+
+        # Since they may not all be saved, iterate over them.
+        for obj in object_list:
+            if self.update_detail([obj], bundle):
+                allowed.append(obj)
+
+        return allowed
+
+    def delete_list(self, object_list, bundle):
+        """
+        Only superuser can delete lists!
+        """
+        if self.user.is_superuser:
+            return True
+
+        raise Unauthorized("Sorry, no deletes.")
+
+    def delete_detail(self, object_list, bundle):
+        """
+        If user has permissions to delete detail, it can only 
+        delete those ctreated by him.
+        """
+        if bundle.request.user.is_superuser:
+            return True
+
+        if bundle.request.user.has_permission('delete_detail',
+                                              object_list._document._class_name):
+            return bundle.obj.created_by == bundle.request.user
+
+        raise Unauthorized("Sorry, no deletes.")
+
+
+class AnyoneCanViewAuthorization(AppAuthorization):
     """
     Custom authorization for documents that can be viewed by anyone,
     but require Authentification and Authorization for updates.
@@ -86,58 +241,3 @@ class AnyoneCanViewAuthorization(Authorization):
 
     def read_detail(self, object_list, bundle):
         return True
-
-    def create_detail(self, object_list, bundle):
-        if bundle.request.user.is_anonymous():
-            return False
-        usr = bundle.request.user
-        return (usr.is_active() and usr.has_perm(object_list._document._class_name)) or usr.is_superuser()
-    
-
-class AppAuthorization(Authorization):
-    """
-    Custom authorization using permissions.
-    """
-    def read_list(self, object_list, bundle):
-        # This assumes a ``QuerySet`` from ``ModelResource``.
-        try:
-            if bundle.request.user.has_perm(object_list.__class__):
-                return object_list.all()
-            else:
-                return object_list.filter(created_by=bundle.request.user)
-        except TypeError:
-            # Un-authenticated user.
-            pass
-        print bundle.obj, type(bundle.obj)
-        # return object_list.filter(created_by=bundle.request.user)
-
-    # def read_detail(self, object_list, bundle):
-    #     # Is the requested object owned by the user?
-    #     return bundle.obj.created_by == bundle.request.user
-
-    # def create_detail(self, object_list, bundle):
-    #     return bundle.obj.created_by == bundle.request.user
-
-    # def create_list(self, object_list, bundle):
-    #     # Create list is auto-assigned to ``user``.
-    #     return object_list
-
-    # def update_list(self, object_list, bundle):
-    #     allowed = []
-
-    #     # Since they may not all be saved, iterate over them.
-    #     for obj in object_list:
-    #         if obj.user == bundle.request.user:
-    #             allowed.append(obj)
-
-    #     return allowed
-
-    # def update_detail(self, object_list, bundle):
-    #     return bundle.obj.user == bundle.request.user
-
-    # def delete_list(self, object_list, bundle):
-    #     # Sorry user, no deletes for you!
-    #     raise Unauthorized("Sorry, no deletes.")
-
-    # def delete_detail(self, object_list, bundle):
-    #     raise Unauthorized("Sorry, no deletes.")

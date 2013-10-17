@@ -4,7 +4,6 @@ from mongoengine.django.auth import User
 from django.utils.translation import ugettext_lazy as _
 
 from datetime import datetime
-from hashlib import sha1
 
 from hymnbooks.apps.core import utils
 
@@ -90,27 +89,12 @@ class GlobalPermission(EmbeddedDocument):
         return u"can %s for %s" % (self.permission, self.document_type)
 
 
-class MongoGroup(Document):
-    """
-    Group maps MongoUsers to Permissions.
-    """
-    name = StringField(required=True, unique=True, help_text=_(u'Name'))
+class PermissionControlDocument(Document):
     permissions = ListField(EmbeddedDocumentField(GlobalPermission),
                             help_text=_(u'Permissions'))
+    meta = {'abstract': True}
 
-    meta = {'collection': 'adminGroup'}
-
-    def __unicode__(self):
-        return self.name
-
-    def has_permission(self, permission):
-        return all(utils.ensure_list(permission) in self.permissions)
-
-    def ensure_permission(self, permission):
-        if not self.has_permission(permission):
-            self.permissions.extend(utils.ensure_list(permission))
-
-    def save(self, *args, **kwargs):
+    def ensure_no_duplicates_permissions(self):
         """
         Take care of duplicates in the permissions, on all fields. Doesn't
         depend on the structure of Permission.
@@ -120,11 +104,43 @@ class MongoGroup(Document):
         permissions_dicts = [dict((m[0], m[1]) for m in l)
                              for l in permissions_clean]
         self.permissions = [GlobalPermission(**kw) for kw in permissions_dicts]
+    
 
+class MongoGroup(PermissionControlDocument):
+    """
+    Group maps MongoUsers to Permissions.
+    """
+    name = StringField(required=True, unique=True, help_text=_(u'Name'))
+
+    meta = {'collection': 'adminGroup'}
+
+    def __unicode__(self):
+        return self.name
+
+    def has_permission(self, permission, document_type):
+        try:
+            MongoGroup.objects.get(id=self.id,
+                                   permissions__permission=permission,
+                                   permissions__document_type=document_type)
+        except (MongoGroup.DoesNotExist, MongoGroup.MultipleObjectsReturned):
+            return False
+
+        return True
+
+    def ensure_permission(self, permission, document_type):
+        if not self.has_permission(permission, document_type):
+            self.permissions.append(
+                GlobalPermission(permission=permission,
+                                 document_type=document_type))
+            self.save()
+
+    def save(self, *args, **kwargs):
+        self.ensure_no_duplicates_permissions()
+        
         super(MongoGroup, self).save(*args, **kwargs)
+    
 
-
-class MongoUser(User):
+class MongoUser(User, PermissionControlDocument):
     """
     Subclass of mongoengine.django.auth.User with email as username
     and API key for authentication.
@@ -135,12 +151,12 @@ class MongoUser(User):
     api_key = StringField(required=False, max_length=256, default='')
     api_key_created = DateTimeField(help_text=_(u'Created'))
     group = ListField(ReferenceField(MongoGroup))
-    permissions = ListField(EmbeddedDocumentField(GlobalPermission),
-                            help_text=_(u'Personal access'))
-
+    
     def save(self, *args, **kwargs):
         if not self.api_key:
             self.set_api_key()
+
+        self.ensure_no_duplicates_permissions()
 
         super(MongoUser, self).save(*args, **kwargs)
 
@@ -150,16 +166,30 @@ class MongoUser(User):
 
     def generate_key(self):
         import uuid, hmac
+        from hashlib import sha1
 
         new_uuid = uuid.uuid4()
         return hmac.new(str(new_uuid), digestmod=sha1).hexdigest()
 
-    def has_perm(self, permission, content_type):
+    def has_permission(self, permission, document_type):
+        # No permissions for non-active users.
+        if not self.is_active:
+            return False
+
+        # Check Group permissions.
         for group in self.group:
-            if group.has_perm(permission, content_type):
+            if group.has_permission(permission, document_type):
                 return True
 
-        # if self.permissions.
+        # Check individual permissions.
+        try:
+            MongoUser.objects.get(id=self.id,
+                                  permissions__permission=permission,
+                                  permissions__document_type=document_type)
+        except (MongoUser.DoesNotExist, MongoUser.MultipleObjectsReturned):
+            return False
+
+        return True
 
     def __unicode__(self):
         return u"%s (%s)" % (self.username, self.get_full_name())
@@ -395,3 +425,14 @@ def create_api_key(sender, **kwargs):
     if kwargs.get('created', False) is True:
         user = kwargs.get('document', None)
         user.set_api_key()
+
+def control_permissions(sender, **kwargs):
+    """
+    A signal for checking if there is no duplicates in permissions.
+    """
+    if kwargs.get('created', False) is True:
+        document = kwargs.get('document', None)
+        try:
+            document.ensure_no_duplicates_permissions()
+        except:
+            pass # Do nothing.
