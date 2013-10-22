@@ -164,9 +164,8 @@ class AppAuthorization(Authorization):
         # This assumes a ``QuerySet`` from ``ModelResource``.
         user = bundle.request.user
         document_type = object_list._document._class_name
-        user_has_permissions = False
         try:
-            if user.is_superuser:
+            if user.is_superuser or user.is_staff:
                 return object_list.all()
             elif user.has_permission('read_list', document_type):
                 return object_list.filter(created_by__exact=user)
@@ -195,7 +194,7 @@ class AppAuthorization(Authorization):
         return bundle.request.user.is_superuser or \
           (bundle.request.user.has_permission('update_detail',
                                               object_list._document._class_name)
-              and bundle.request.user == object_list.created_by)
+              and bundle.obj.created_by == bundle.request.user)
 
     def update_list(self, object_list, bundle):
         allowed = []

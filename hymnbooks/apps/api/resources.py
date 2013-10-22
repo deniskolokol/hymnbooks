@@ -1,4 +1,5 @@
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
+from tastypie.authentication import Authentication
 from tastypie.authorization import ReadOnlyAuthorization
 from tastypie_mongoengine.resources import MongoEngineResource
 from tastypie_mongoengine.fields import *
@@ -89,7 +90,7 @@ class FieldTypeResource(Resource):
         list_allowed_methods = ('get',)
         detail_allowed_methods = ()
         authorization = ReadOnlyAuthorization()
-        authentication = AppApiKeyAuthentication()
+        authentication = Authentication()
 
     def obj_get_list(self, request=None, **kwargs):
         return BaseChoiceList.get_list(models.FIELD_TYPE)
@@ -240,11 +241,29 @@ class FieldDefinitionResource(MongoEngineResource):
             bundle.data['field_type'] = 'embeddeddocument'
         return bundle
 
+    
+class EndUserDataResource(MongoEngineResource):
+    created_by = ReferenceField(attribute='created_by',
+                                to='hymnbooks.apps.api.resources.UserResource',
+                                full=True)
 
-class SectionResource(MongoEngineResource):
-    fields = EmbeddedListField(
-        of='hymnbooks.apps.api.resources.FieldDefinitionResource',
-        attribute='fields', full=True, null=True)
+    def hydrate_created_by(self, bundle):
+        # Check if object is being created, not updated.
+        # bundle.obj.created_by = bundle.request.user
+        return bundle
+
+    def dehydrate(self, bundle):
+        # bookmark
+        # How to hide data about user?
+        # if bundle.request.method == 'GET':
+        #     bundle.data['created_by'] = bundle.data['created_by'].obj.__unicode__()
+        return bundle.data
+
+    
+class SectionResource(EndUserDataResource):
+    fields = EmbeddedListField(attribute='fields',
+                               of='hymnbooks.apps.api.resources.FieldDefinitionResource',
+                               full=True, null=True)
 
     class Meta:
         object_class = models.Section
@@ -264,7 +283,7 @@ class SectionResource(MongoEngineResource):
         bundle.data = ensure_slug(bundle.data, 'title', 'help_text',
                                   self.Meta.object_class)
         return bundle
-    
+
 
 class ManuscriptContentResource(MongoEngineResource):
     class Meta:
@@ -283,16 +302,16 @@ class PieceResource(MongoEngineResource):
         authorization = AnyoneCanViewAuthorization()
 
         
-class ManuscriptResource(MongoEngineResource):
+class ManuscriptResource(EndUserDataResource):
     """
     Manuscript data.
     """
-    content = EmbeddedListField(
-        of='hymnbooks.apps.api.resources.ManuscriptContentResource',
-        attribute='content', full=True, null=True)
-    pieces = EmbeddedListField(
-        of='hymnbooks.apps.api.resources.PieceResource',
-        attribute='pieces', full=True, null=True)
+    content = EmbeddedListField(attribute='content',
+                                of='hymnbooks.apps.api.resources.ManuscriptContentResource',
+                                full=True, null=True)
+    pieces = EmbeddedListField(attribute='pieces',
+                               of='hymnbooks.apps.api.resources.PieceResource',
+                               full=True, null=True)
 
     class Meta:
         object_class = models.Manuscript
