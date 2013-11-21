@@ -16,3 +16,9 @@ TEMPLATE_DIRS = (
     os.path.join(ROOT_PATH, 'templates/'),
     os.path.join(ROOT_PATH, 'templates/cms/'),
     )
+
+# Connect to the db.
+from mongoengine import register_connection
+register_connection('default', MONGO_DATABASE_NAME, **MONGO_DATABASE_OPTIONS)
+
+TEST_RUNNER = 'hymnbooks.apps.core.tests.MongoTestRunner'

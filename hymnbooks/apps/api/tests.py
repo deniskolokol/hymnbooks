@@ -1,19 +1,13 @@
 # encoding:utf-8 #
 
-from mongoengine import connect, connection
-from mongoengine.context_managers import switch_db
-
-from tastypie.test import ResourceTestCase
-from tastypie_mongoengine.test_runner import MongoEngineTestCase
-
-from mixer.backend.mongoengine import mixer
-
-from hymnbooks.apps.core import models
-
-from django.conf import settings
-
 import random
 import string
+from mongoengine import connect, connection, register_connection
+from mongoengine.context_managers import switch_db
+from tastypie.test import ResourceTestCase
+from mixer.backend.mongoengine import mixer
+from hymnbooks.apps.core import models
+from django.conf import settings
 
 
 def get_list_choices(deserialized_resp):
@@ -31,43 +25,19 @@ def id_generator(size=6, chars=string.ascii_lowercase+string.digits):
 
 class MongoResourceTestCase(ResourceTestCase):
     """
-    Tastypie ResourceTestCase modified for mongoengine. Clears the collection
-    between the tests.
+    Tastypie ResourceTestCase modified for mongoengine.
 
     Warning! When testing mongo should be started without --auth option!
     """
-    alias = 'test_db'
-    db_name = 'test_%s' % settings.MONGO_DATABASE_NAME
-    username = 'test_user'
-    password = 'test_password'
-    user_email = 'test@localhost.local'
-
-    def _pre_setup(self):
-        connection.disconnect() # from the current db
-        db_opts = dict((k, v) for k, v 
-                       in settings.MONGO_DATABASE_OPTIONS.iteritems() 
-                       if k in ['host', 'port'])
-        connect(self.db_name, self.alias, **db_opts)
-
-        super(MongoResourceTestCase, self)._pre_setup()
-
-    def _post_teardown(self):
-        current_connection = connection.get_connection(alias=self.alias)
-        current_connection.drop_database(self.db_name)
-        current_connection.disconnect()
-
-        super(MongoResourceTestCase, self)._post_teardown()
-
-
     def setupUser(self, is_staff=False):
-        with switch_db(models.MongoUser, self.alias) as User:
-            self.user = mixer.blend(User,
-                                    password=id_generator(),
-                                    email='%s@localhost.local' % id_generator(),
-                                    is_staff=is_staff)
-            # self.user.save()
-
+        self.user = mixer.blend(models.MongoUser, is_staff=is_staff)
         return self.user
+
+    def get_credentials(self):
+        return self.create_basic(username=self.user.username, password=self.user.password)
+
+    def get_credentials_api_key(self):
+        return self.create_apikey(username=self.user.username, api_key=self.user.api_key)
 
 
 class APITopLevelTest(ResourceTestCase):
@@ -134,52 +104,66 @@ class FieldTypeResourceTest(ResourceTestCase):
 class GroupResourceTest(MongoResourceTestCase):
     def setUp(self):
         super(GroupResourceTest, self).setUp()
-
-        self.user = super(GroupResourceTest, self).setupUser(is_staff=True)
-
+        self.user = self.setupUser(is_staff=True)
+        _p = lambda m: [{"permission": p[0], "document_type": m} for p in models.PERMISSION_TYPE]
+        self.post_data = [{"name": "Kabalyeros", "permissions": _p('Section')},
+                          {"name": "Escuderos", "permissions": _p('Manuscript')}]
         self.uri_auth = '?username=%s&api_key=%s' % (self.user.username, self.user.api_key)
 
-    def test_get_section_list(self):
-        # Http response should be OK, but no data.
-        self.assertHttpOK(self.api_client.get('/api/v1/admin_group/', format='json'))
+    def test_post_detail_unauthorized(self):
+        self.assertHttpUnauthorized(self.api_client.post('/api/v1/admin_group/', format='json', data=self.post_data))
 
-    def post_detail(self):
-        # Generate permission data for document_type.
-        self.post_data = {"name": "Moderators",
-                          "permissions": [{"permission": p[0], "document_type": "Section"}
-                                          for p in models.PERMISSION_TYPE]}
-        self.assertHttpCreated(self.api_client.post('/api/admin_group/%s' % self.uri_auth, format='json', data=self.post_data))
-
-        # Check permissions!
-
-    def patch_detail(self):
-        # Freshly created group.
-        with switch_db(models.MongoGroup, self.alias) as Group:
-            new_group = Group.objects.latest('pk')
-
-            # Prepare group data.
-            self.patch_data = [{"permission": p[0], "document_type": "Manuscript"} for p in models.PERMISSION_TYPE]
-
-            # Patch it.
-            self.assertHttpCreated(self.api_client.post(
-                '/api/admin_group/%s/permission/%s/' % (new_group, self.uri_auth), format='json', data=self.patch_data))
-
-            # Check permissions!
-
-    def patch_detail(self):
-        # Freshly created group.
-        with switch_db(models.MongoGroup, self.alias) as Group:
-            new_group = Group.objects.latest('pk')
-
-            # Prepare group data.
-            self.patch_data = [{"permission": p[0], "document_type": "Manuscript"} for p in models.PERMISSION_TYPE]
-
-            # Patch it.
-            self.assertHttpCreated(self.api_client.post(
-                '/api/admin_group/%s/permission/%s/' % (new_group, self.uri_auth), format='json', data=self.patch_data))
-
-            # Check permissions!
+    def test_post_detail_authorized(self):
+        # Waring! This test doesn't pass even if the authorization working!
+        # Solve it! See http://stackoverflow.com/questions/13028906/cant-do-post-with-curl-and-apikeyauthentication-in-tastypie
+        resp = self.api_client.post('/api/v1/admin_group/%s' % self.uri_auth,
+                                    data=self.post_data, format='json')
         
+        self.assertHttpCreated(resp)
+
+    def test_get_list(self):
+        # Unauthenticated.
+        resp = self.api_client.get('/api/v1/admin_group/', format='json')
+
+        # Http response should be OK, but no data.
+        self.assertHttpOK(resp)
+        self.assertEqual(len(self.deserialize(resp)['objects']), 0)
+
+        # # Authenticated.
+        # resp = self.api_client.get('/api/v1/admin_group/', format='json', authentication=self.get_credentials_api_key())
+        # print self.deserialize(resp)
+        # self.assertEqual(len(self.deserialize(resp)['objects']), 1)
+
+    # def test_get_group_list_authenticated(self):
+    #     resp = self.api_client.get('/api/v1/admin_group/', format='json', authentication=self.get_credentials())
+        
+    #     # Http response should be OK.
+    #     self.assertHttpOK(self.api_client.get('/api/v1/admin_group/', format='json'))
+
+    #     # But no data.
+    #     self.assertEqual(len(self.deserialize(resp)['objects']), 0)
+
+    # def test_patch_detail_unauthorzied(self):
+    #     self.assertHttpUnauthorized(self.api_client.get('/api/v1/admin_group/', format='json'))
+        
+    # def test_patch_detail(self):
+    #     # Freshly created group.
+    #     with switch_db(models.MongoGroup, self.alias) as Group:
+    #         new_group = Group.objects.latest('pk')
+
+    #         # Prepare group data.
+    #         self.patch_data = [{"permission": p[0], "document_type": "Manuscript"} for p in models.PERMISSION_TYPE]
+
+    #         # Patch it.
+    #         self.assertHttpCreated(self.api_client.post(
+    #             '/api/admin_group/%s/permission/%s/' % (new_group, self.uri_auth), format='json', data=self.patch_data))
+
+    #         # Check permissions!
+
+
+
+
+    
 # class SectionResourceTest(MongoResourceTestCase):
 #     def setUp(self):
 #         super(SectionResourceTest, self).setUp()

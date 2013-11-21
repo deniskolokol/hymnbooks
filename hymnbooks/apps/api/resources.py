@@ -1,11 +1,12 @@
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
-from tastypie.authentication import Authentication
+from tastypie.authentication import Authentication, MultiAuthentication
 from tastypie.authorization import ReadOnlyAuthorization
 from tastypie_mongoengine.resources import MongoEngineResource
 from tastypie_mongoengine.fields import *
 
 from hymnbooks.apps.core import models, utils
-from hymnbooks.apps.api.auth import *
+from hymnbooks.apps.api.auth import AppApiKeyAuthentication, CookieBasicAuthentication, \
+     AnyoneCanViewAuthorization, StaffAuthorization, AppAuthorization
 
 
 DATE_FILTERS = ('exact', 'lt', 'lte', 'gte', 'gt', 'ne')
@@ -111,7 +112,7 @@ class PermissionResource(Resource):
         list_allowed_methods = ('get',)
         detail_allowed_methods = ()
         authorization = ReadOnlyAuthorization()
-        authentication = AppApiKeyAuthentication()
+        authentication = Authentication()
 
     def obj_get_list(self, request=None, **kwargs):
         return BaseChoiceList.get_list(models.PERMISSION_TYPE)
@@ -133,7 +134,7 @@ class DocumentTypeResource(Resource):
         list_allowed_methods = ('get',)
         detail_allowed_methods = ()
         authorization = ReadOnlyAuthorization()
-        authentication = AppApiKeyAuthentication()
+        authentication = Authentication()
 
     def obj_get_list(self, request=None, **kwargs):
         return BaseChoiceList.get_list(models.DOCUMENT_TYPE)
@@ -147,8 +148,8 @@ class DocumentPermissionResource(MongoEngineResource):
     class Meta:
         object_class = models.GlobalPermission
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
-
-        authentication = AppApiKeyAuthentication()
+        authentication = MultiAuthentication(AppApiKeyAuthentication(),
+                                             CookieBasicAuthentication())
         authorization = StaffAuthorization()
 
 
@@ -160,10 +161,10 @@ class GroupResource(MongoEngineResource):
     class Meta:
         object_class = models.MongoGroup
         resource_name = 'admin_group'
-        excludes = ('id', )
-        allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
-
-        authentication = AppApiKeyAuthentication()
+        excludes = ('id',)
+        allowed_methods = ('get', 'post', 'put', 'patch', 'delete',)
+        authentication = MultiAuthentication(AppApiKeyAuthentication(), 
+                                             CookieBasicAuthentication())
         authorization = StaffAuthorization()
 
 
@@ -179,14 +180,14 @@ class UserResource(MongoEngineResource):
         resource_name = 'admin_user'
         object_class = models.MongoUser
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
-        excludes = ('id', 'api_key', 'api_key_created', 'email', # WARNING! Re-write it when AppAuthorization is ready
-                    'is_staff', 'is_superuser', 'password',) # (admins should see all fields!)
+        # excludes = ('id', 'password',)
         filtering = {
             'username': ALL, # Filters are tuned to handle Authentication in the URL.
             'is_active': ('exact', 'ne'),
             'date_joined': DATE_FILTERS
             }
-        authentication = AppApiKeyAuthentication()
+        authentication = MultiAuthentication(AppApiKeyAuthentication(), 
+                                             CookieBasicAuthentication())
         authorization = StaffAuthorization()
 
     def hydrate(self, bundle):
@@ -214,26 +215,25 @@ class UserResource(MongoEngineResource):
         if filters is None:
             filters = {}
 
-        # Eliminate `username` from filters. If there is necessity to
-        # filter by username, `username__exact` should be used!
-        if 'username' in filters.keys():
-            del filters['username']
+        # Eliminate `username` and `api_key` from filters.
+        # Filter by username using `username__exact`.
+        filters = dict((k, v) for k, v in filters.iteritems()
+                       if k not in ['username', 'api_key'])
 
         orm_filters = super(UserResource, self).build_filters(filters)
 
         return orm_filters
 
 class FieldDefinitionResource(MongoEngineResource):
-    embedded_section = ReferenceField(
-        to='hymnbooks.apps.api.resources.SectionResource',
-        attribute='embedded_section', full=True, null=True)
-    
+    embedded_section = ReferenceField(attribute='embedded_section',
+                                      to='hymnbooks.apps.api.resources.SectionResource',
+                                      full=True, null=True)
     class Meta:
         object_class = models.FieldDefinition
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
-
+        authentication = MultiAuthentication(AppApiKeyAuthentication(),
+                                             CookieBasicAuthentication())
         authorization = AppAuthorization()
-        authentication = AppApiKeyAuthentication()
 
     def hydrate(self, bundle):
         bundle.data = ensure_slug(bundle.data, 'field_name', 'help_text')
@@ -241,30 +241,35 @@ class FieldDefinitionResource(MongoEngineResource):
             bundle.data['field_type'] = 'embeddeddocument'
         return bundle
 
+    def dispatch(self, request_type, request, **kwargs):
+        # import pdb
+        # pdb.set_trace()
+
+        super(FieldDefinitionResource, self).dispatch(request_type, request, **kwargs)
+
+
     
 class EndUserDataResource(MongoEngineResource):
     created_by = ReferenceField(attribute='created_by',
                                 to='hymnbooks.apps.api.resources.UserResource',
                                 full=True)
-
-    def hydrate_created_by(self, bundle):
-        # Check if object is being created, not updated.
-        # bundle.obj.created_by = bundle.request.user
-        return bundle
+    class Meta:
+        authentication = MultiAuthentication(AppApiKeyAuthentication(),
+                                             CookieBasicAuthentication())
+        authorization = AppAuthorization()
 
     def dehydrate(self, bundle):
-        # bookmark
-        # How to hide data about user?
-        # if bundle.request.method == 'GET':
-        #     bundle.data['created_by'] = bundle.data['created_by'].obj.__unicode__()
-        return bundle.data
+        bundle.data['created_by_resource_uri'] = '/api/v1/admin_user/%s/' % \
+          bundle.data['created_by'].obj.id        
+        bundle.data['created_by'] = bundle.data['created_by'].obj.__unicode__()
 
-    
+        return bundle
+
+
 class SectionResource(EndUserDataResource):
     fields = EmbeddedListField(attribute='fields',
                                of='hymnbooks.apps.api.resources.FieldDefinitionResource',
                                full=True, null=True)
-
     class Meta:
         object_class = models.Section
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
@@ -275,9 +280,9 @@ class SectionResource(EndUserDataResource):
             }
         excludes = ('id',)
         always_return_data = True
-
+        authentication = MultiAuthentication(AppApiKeyAuthentication(),
+                                             CookieBasicAuthentication())
         authorization = AppAuthorization()
-        authentication = AppApiKeyAuthentication()
 
     def hydrate(self, bundle):
         bundle.data = ensure_slug(bundle.data, 'title', 'help_text',
@@ -290,7 +295,8 @@ class ManuscriptContentResource(MongoEngineResource):
         resource_name = 'manuscript_content'
         object_class = models.ManuscriptContent
         allowed_methods = ('get', 'post')
-        authentication = AppApiKeyAuthentication()
+        authentication = MultiAuthentication(AppApiKeyAuthentication(), 
+                                             CookieBasicAuthentication())
         authorization = AnyoneCanViewAuthorization()
 
 
@@ -298,7 +304,8 @@ class PieceResource(MongoEngineResource):
     class Meta:
         object_class = models.Piece
         allowed_methods = ('get', 'post')
-        authentication = AppApiKeyAuthentication()
+        authentication = MultiAuthentication(AppApiKeyAuthentication(), 
+                                             CookieBasicAuthentication())
         authorization = AnyoneCanViewAuthorization()
 
         
@@ -322,7 +329,8 @@ class ManuscriptResource(EndUserDataResource):
             'last_updated': DATE_FILTERS,
             }
         excludes = ('id',)
-        authentication = AppApiKeyAuthentication()
+        authentication = MultiAuthentication(AppApiKeyAuthentication(), 
+                                             CookieBasicAuthentication())
         authorization = AnyoneCanViewAuthorization()
 
     def hydrate(self, bundle):

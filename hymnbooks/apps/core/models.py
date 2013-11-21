@@ -7,6 +7,7 @@ from datetime import datetime
 
 from hymnbooks.apps.core import utils
 
+
 """
 Document status:
 * Every time a new document is created, it is becoming 'draft'

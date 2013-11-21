@@ -1,6 +1,7 @@
 from django.utils.translation import ugettext_lazy as _
+from django.contrib.sessions.models import Session
 
-from tastypie.authentication import ApiKeyAuthentication
+from tastypie.authentication import BasicAuthentication, ApiKeyAuthentication
 from tastypie.authorization import Authorization
 from tastypie.exceptions import Unauthorized
 
@@ -27,7 +28,6 @@ class AppApiKeyAuthentication(ApiKeyAuthentication):
     def __init__(self, *args, **kwargs):
         self.super_self = super(AppApiKeyAuthentication, self)
         self.super_self.__init__(*args, **kwargs)
-        
 
     def is_mongouser_authenticated(self, request):
         """
@@ -66,7 +66,6 @@ class AppApiKeyAuthentication(ApiKeyAuthentication):
         Custom solution for `is_authenticated` function: MongoUsers has got
         authenticated through custom api_key check.
         """
-
         # Run authentication first (even if it's GET, 
         # user will be used by AppAuthorization)
         try:
@@ -82,6 +81,25 @@ class AppApiKeyAuthentication(ApiKeyAuthentication):
         if request.method == 'GET':
             is_authenticated = True
         return is_authenticated
+
+class CookieBasicAuthentication(BasicAuthentication):
+    """
+    If the user is already authenticated by a django session it will 
+    allow the request (useful for ajax calls). If it is not, defaults
+    to basic authentication, which other clients could use.
+    """
+    def __init__(self, *args, **kwargs):
+        self.super_self = super(CookieBasicAuthentication, self)
+        self.super_self.__init__(*args, **kwargs)
+
+    def is_authenticated(self, request, **kwargs):
+        if 'sessionid' in request.COOKIES:
+            s = Session.objects.get(pk=request.COOKIES['sessionid'])
+            if '_auth_user_id' in s.get_decoded():
+                request.user = MongoUser.objects.get(
+                    id=s.get_decoded()['_auth_user_id'])
+                return True
+        return self.super_self.is_authenticated(request, **kwargs)
 
 
 class StaffAuthorization(Authorization):
@@ -177,13 +195,13 @@ class AppAuthorization(Authorization):
     def read_detail(self, object_list, bundle):
         return bundle.request.user.is_superuser or \
           bundle.request.user.has_permission('read_detail',
-                                             object_list._document._class_name)
+                                             bundle.obj._class_name)
 
     def create_detail(self, object_list, bundle):
         try:
             return bundle.request.user.is_superuser \
               or bundle.request.user.has_permission('create_detail',
-                                                    object_list._document._class_name)
+                                                    bundle.obj._class_name)
         except AttributeError:
             raise Unauthorized(_('You have to authenticate first!'))
 
@@ -193,7 +211,7 @@ class AppAuthorization(Authorization):
     def update_detail(self, object_list, bundle):
         return bundle.request.user.is_superuser or \
           (bundle.request.user.has_permission('update_detail',
-                                              object_list._document._class_name)
+                                              bundle.obj._class_name)
               and bundle.obj.created_by == bundle.request.user)
 
     def update_list(self, object_list, bundle):
