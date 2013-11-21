@@ -241,13 +241,6 @@ class FieldDefinitionResource(MongoEngineResource):
             bundle.data['field_type'] = 'embeddeddocument'
         return bundle
 
-    def dispatch(self, request_type, request, **kwargs):
-        # import pdb
-        # pdb.set_trace()
-
-        super(FieldDefinitionResource, self).dispatch(request_type, request, **kwargs)
-
-
     
 class EndUserDataResource(MongoEngineResource):
     created_by = ReferenceField(attribute='created_by',
