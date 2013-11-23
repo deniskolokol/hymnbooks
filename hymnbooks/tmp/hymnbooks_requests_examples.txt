@@ -1,0 +1,102 @@
+# section
+# POST
+
+# full
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '
+{"title" : "support", "help_text" : "Wsparcie", "fields" : [ {"field_name" :
+"evidence", "blank": true,"default": null,"help_text": "Dowód","nullable": true,"readonly": false,"field_type": "string","unique": false}, {"field_name" : "source","blank": true,"default": null,"help_text": "Źródło","nullable": true,"readonly": false,"field_type": "string","unique": false}, {"field_name" : "trusted","blank": true,"default": true,"help_text": "Potwierdzone","nullable": false,"readonly": false,"field_type": "boolean","unique": false}]}' http://dev.hymnbooks:8000/api/v1/section/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+# partial
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '
+{"help_text" : "Wsparcie", "fields": []}' http://dev.hymnbooks:8000/api/v1/section/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+# PATCH (partial update)
+
+# Should raise an error if any of required fields is empty
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"status": "active"}' http://dev.hymnbooks:8000/api/v1/section/524df40502c8f109b07ed6ae/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+# Works smooth, 'cause at least one field is defined
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"status": "active", "fields": [ {"field_name" : "evidence", "blank": true,"default": null,"help_text": "Dowód","nullable": true,"readonly": false,"field_type": "string","unique": false}]}' http://dev.hymnbooks:8000/api/v1/section/524df40502c8f109b07ed6ae/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+# Not full info on the field
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"help_text": "Dowód"}' http://dev.hymnbooks:8000/api/v1/section/524df40502c8f109b07ed6ae/fields/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+# Updating reference field (embedded_section)
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"embedded_section": "/api/v1/section/52445c4d02c8f105f1570c98/"}' http://dev.hymnbooks:8000/api/v1/section/524df40502c8f109b07ed6ae/fields/1/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+
+
+# DELETE
+curl --dump-header - -H "Content-Type: application/json" -X DELETE http://dev.hymnbooks:8000/api/v1/section/524df0ac02c8f1094f1f17c2/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+# PATCH (partial update)
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"default": false}' http://localhost:8000/api/v1/section/5245f02c02c8f1062ff3023b/fields/2/
+
+
+
+
+# manuscript
+
+# POST
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '
+{"title": "Kancjonał St. M"}' http://dev.hymnbooks:8000/api/v1/manuscript/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+# DELETE
+
+curl --dump-header - -H "Content-Type: application/json" -X DELETE http://dev.hymnbooks:8000/api/v1/manuscript/524f47dd02c8f10a26674d1c/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+
+
+
+# admin: group
+# POST
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"name": "Moderators", "permissions": [{"permission": "create_detail", "document_type": "Section"}, {"permission": "update_detail", "document_type": "Section"}]}' http://dev.hymnbooks:8000/api/v1/admin_group/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+# POST
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"name": "Users", "permissions": [ {"permission" : "read_list", "document_type": "Manuscript"}]}' http://dev.hymnbooks:8000/api/v1/admin_group/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+# PATCH
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"permissions": [ {"permission" : "read_detail", "document_type": "Manuscript"}]}' http://dev.hymnbooks:8000/api/v1/admin_group/5257ed3202c8f10801429ef8/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+# admin: permissions in group
+# POST
+# (add permission to the group)
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"permission" : "read_list", "document_type": "Manuscript"}' http://dev.hymnbooks:8000/api/v1/admin_group/5257ed3202c8f10801429ef8/permissions/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+DELETE
+# (delete permission from the group)
+curl --dump-header - -H "Content-Type: application/json" -X DELETE http://dev.hymnbooks:8000/api/v1/admin_group/5257ed3202c8f10801429ef8/permissions/0/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+
+
+
+# admin: user
+# PATCH - setup group
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"group": ["/api/v1/admin_group/5257d89a02c8f107a7921246/"]}' http://dev.hymnbooks:8000/api/v1/admin_user/5249c7af02c8f1083b2a8432/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+
+# WARNING! Append and delete are different for reference fields!
+# Append Group (without re-writing the list)
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"group__append": ["/api/v1/admin_group/5257ed3202c8f10801429ef8/"]}' http://dev.hymnbooks:8000/api/v1/admin_user/5249c7af02c8f1083b2a8432/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+# Delete Group
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"group__delete": ["/api/v1/admin_group/5257ed3202c8f10801429ef8/"]}' http://dev.hymnbooks:8000/api/v1/admin_user/5249c7af02c8f1083b2a8432/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+# While adding permissions to User directly goes the same way as for Group
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '
+{"permission": "read_list", "document_type": "Manuscript"}' http://dev.hymnbooks:8000/api/v1/admin_user/5249c7af02c8f1083b2a8432/permissions/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
