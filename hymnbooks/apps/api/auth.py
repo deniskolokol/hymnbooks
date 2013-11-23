@@ -108,6 +108,8 @@ class StaffAuthorization(Authorization):
     """
     def read_list(self, object_list, bundle):
         # This assumes a ``QuerySet`` from ``ModelResource``.
+        import pdb
+        pdb.set_trace()
         try:
             if bundle.request.user.is_superuser or bundle.request.user.is_staff:
                 return object_list.all()
