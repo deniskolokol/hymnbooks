@@ -70,7 +70,7 @@ class AppApiKeyAuthentication(ApiKeyAuthentication):
         # user will be used by AppAuthorization)
 
         import pdb
-        pdb.set_trace())
+        pdb.set_trace()
 
         try:
             is_authenticated = self.super_self.is_authenticated(
