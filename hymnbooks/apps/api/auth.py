@@ -66,12 +66,6 @@ class AppApiKeyAuthentication(ApiKeyAuthentication):
         Custom solution for `is_authenticated` function: MongoUsers has got
         authenticated through custom api_key check.
         """
-        # Run authentication first (even if it's GET, 
-        # user will be used by AppAuthorization)
-
-        import pdb
-        pdb.set_trace()
-
         try:
             is_authenticated = self.super_self.is_authenticated(
                 request, **kwargs)
