@@ -68,6 +68,10 @@ class AppApiKeyAuthentication(ApiKeyAuthentication):
         """
         # Run authentication first (even if it's GET, 
         # user will be used by AppAuthorization)
+
+        import pdb
+        pdb.set_trace())
+
         try:
             is_authenticated = self.super_self.is_authenticated(
                 request, **kwargs)
@@ -108,8 +112,6 @@ class StaffAuthorization(Authorization):
     """
     def read_list(self, object_list, bundle):
         # This assumes a ``QuerySet`` from ``ModelResource``.
-        import pdb
-        pdb.set_trace()
         try:
             if bundle.request.user.is_superuser or bundle.request.user.is_staff:
                 return object_list.all()
