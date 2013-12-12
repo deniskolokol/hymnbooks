@@ -27,4 +27,8 @@ urlpatterns = patterns('',
     url(r'^section/(?P<section_id>\w+)/save$', cms_views.SectionView.as_view(),
         {'display_form': True},
         name='section_save'),
+
+    # Upload files
+    url(r'^upload/$', cms_views.FileUploadView.as_view(),
+        name='upload'),
 )

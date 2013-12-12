@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Test uploadu pliku</title>
+    <script src="//kdm.studiokropka.pl/js/jquery-1.9.1.js"></script>
+  </head>
+
+  <body>
+    <form name="form_upload" id="form_upload_universal" enctype="multipart/form-data" action="/cms/upload/" method="post">
+      {% csrf_token %}
+      <input type='text' name='text' value='just a test'/>
+      <input type='file' name='file' />
+      <button type='submit'>Wyślij</button>
+    </form>
+  </body>
+
+</html>

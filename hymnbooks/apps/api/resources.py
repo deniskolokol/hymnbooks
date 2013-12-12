@@ -252,9 +252,11 @@ class EndUserDataResource(MongoEngineResource):
         authorization = AppAuthorization()
 
     def dehydrate(self, bundle):
-        bundle.data['created_by_resource_uri'] = '/api/v1/admin_user/%s/' % \
-          bundle.data['created_by'].obj.id        
-        bundle.data['created_by'] = bundle.data['created_by'].obj.__unicode__()
+        if bundle.request.method == 'GET':
+            bundle.data['created_by_resource_uri'] = \
+              '/api/v1/admin_user/%s/' % bundle.data['created_by'].obj.id
+            bundle.data['created_by'] = \
+              bundle.data['created_by'].obj.__unicode__()
 
         return bundle
 

@@ -9,3 +9,6 @@ class SectionForm(MongoForm):
 
     title = forms.CharField()
     description = forms.CharField(widget=forms.Textarea, required=False)
+
+class UploadFileForm(forms.Form):
+    file = forms.FileField()
