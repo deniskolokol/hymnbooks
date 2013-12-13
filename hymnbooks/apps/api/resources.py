@@ -247,9 +247,9 @@ class EndUserDataResource(MongoEngineResource):
                                 to='hymnbooks.apps.api.resources.UserResource',
                                 full=True)
     class Meta:
+        authorization = AppAuthorization()
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
-        authorization = AppAuthorization()
 
     def dehydrate(self, bundle):
         if bundle.request.method == 'GET':
