@@ -12,6 +12,7 @@ v1_api.register(UserResource())
 v1_api.register(GroupResource())
 v1_api.register(PermissionResource())
 v1_api.register(DocumentTypeResource())
+v1_api.register(ContentImageResource())
 
 urlpatterns = patterns('',
    (r'^', include(v1_api.urls)),

@@ -285,6 +285,25 @@ class SectionResource(EndUserDataResource):
         return bundle
 
 
+class ContentImageResource(EndUserDataResource):
+    """
+    Content Image data.
+    """
+    class Meta:
+        resource_name = 'content_image'
+        object_class = models.ContentImage
+        allowed_methods = ('get', 'patch', 'delete')
+        filtering = {
+            'status': ALL,
+            'created': DATE_FILTERS,
+            'last_updated': DATE_FILTERS,
+            }
+        excludes = ('id',)
+        authorization = AnyoneCanViewAuthorization()
+        authentication = MultiAuthentication(AppApiKeyAuthentication(), 
+                                             CookieBasicAuthentication())
+
+
 class ManuscriptContentResource(MongoEngineResource):
     class Meta:
         resource_name = 'manuscript_content'
