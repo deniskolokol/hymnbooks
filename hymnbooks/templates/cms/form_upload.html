@@ -1,3 +1,5 @@
+{% load i18n staticfiles %}
+
 <!DOCTYPE html>
 <html>
 
@@ -14,6 +16,36 @@
       <input type='file' name='file' />
       <button type='submit'>Wyślij</button>
     </form>
+
+    <table>
+      {% with context_objects.all|first as first_object %}
+      <thead>
+        <tr>
+          <th>{% trans 'Title / filename' %}</th>
+          <th>{% trans 'Created' %}</th>
+          <th>{% trans 'By' %}</th>
+          <th>{% trans 'File type' %}</th>
+          <th>{% trans 'File size' %}</th>
+          <th>{% trans 'Preview' %}</th>
+        </tr>
+      </thead>
+      {% endwith %}
+      <tbody>
+        {% for object in context_objects %}
+        <tr>
+          <td> {{ object.title }} </td>
+          <td> {{ object.created|date:"j E Y" }} </td>
+          <td> {{ object.created_by }} </td>
+          <td> {{ object.image.format }} </td>
+          <td> {{ object.image.length|filesizeformat }} </td>
+          <td> {{ object.image.thumbnail }} </td>
+        </tr>
+          {% empty %}
+        <tr><td>{% trans 'No files in the library' %}.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
   </body>
 
 </html>

@@ -53,11 +53,8 @@ curl --dump-header - -H "Content-Type: application/json" -X POST --data '
 curl --dump-header - -H "Content-Type: application/json" -X DELETE http://dev.hymnbooks:8000/api/v1/manuscript/524f47dd02c8f10a26674d1c/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
 
 # PATCH
-#
-# WARNING! Doesn't work (401) - WHY??
-#
 
-curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"description": "bla bla bla"}' http://hymnbooks.studiokropka.pl/api/v1/manuscript/524f48d902c8f10a424aeee1/?username=beta\&api_key=2452be454a72c0271de78d636784012aca399189
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"description": "ala ma kota, biedna sierota"}' http://dev.hymnbooks:8000/api/v1/manuscript/524f48d902c8f10a424aeee1/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
 
 
 

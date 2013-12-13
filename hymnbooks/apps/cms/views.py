@@ -50,7 +50,20 @@ class FileUploadView(View):
     form_class = forms.UploadFileForm
 
     def get(self, request, *args, **kwargs):
-        return render(request, self.template_name, {'form': self.form_class()})
+        context_objects = []
+        status = {'status__ne': 'deleted'}
+        context_objects_type = kwargs.get('show_only', '')
+        if context_objects_type == 'images':
+            context_objects.extend(list(models.ContentImage.objects(**status)))
+        elif context_objects_type == 'audio':
+            # bookmark: extract audio only from Manuscript -> Piece -> audio
+            pass
+        else:
+            # extract everything
+            context_objects.extend(list(models.ContentImage.objects(**status)))
+        return render(request, self.template_name,
+                      {'form': self.form_class(),
+                       'context_objects': context_objects})
 
     def post(self, request, *args, **kwargs):
         form = self.form_class(request.POST, request.FILES)
@@ -61,10 +74,22 @@ class FileUploadView(View):
 
     def handle_uploaded_file(self, request):
         upload_file = request.FILES['file']
-
         title = request.POST.get('title', force_unicode(upload_file))
-        
         image = models.ContentImage(title=title)
-        # image.image.put(upload_file, content_type = 'image/jpeg')
-        # image.save()
+        image.image.put(upload_file, content_type = 'image/jpeg')
+
+        # bookmark:
+        # Warning!
+        # The field `created_by` is being temporarily substituted by user "beta", if not logged on.
+        # However, when the authentication works, the following should be added here:
+        #
+        # from django.contrib.auth.decorators import login_required
+        # @login_required
+        # def handle_uploaded_file(self, request):
+        # ...
+
+        if request.user.is_anonymous():
+            request.user = models.MongoUser.objects.get(username=u"beta")
+
+        image.save(request=request)
         return

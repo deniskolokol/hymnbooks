@@ -238,6 +238,10 @@ class TemplateGenericDocument(Document):
             self.created = datetime.now()
         self.last_updated = datetime.now()
 
+        if not self.created_by:
+            if kwargs.get("request", None):
+                self.created_by = kwargs["request"].user
+
         super(TemplateGenericDocument, self).save(*args, **kwargs)
 
     def __unicode__(self):
@@ -418,15 +422,16 @@ class Manuscript(GenericSlugDocument):
 
 def create_api_key(sender, **kwargs):
     """
-    A signal for hooking up automatic ApiKey creation for MongoUser.
+    Signal: automatic ApiKey creation for MongoUser.
     """
     if kwargs.get('created', False) is True:
         user = kwargs.get('document', None)
         user.set_api_key()
+    
 
 def control_permissions(sender, **kwargs):
     """
-    A signal for checking if there is no duplicates in permissions.
+    Signal: check if there is no duplicates in permissions.
     """
     if kwargs.get('created', False) is True:
         document = kwargs.get('document', None)
