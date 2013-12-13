@@ -308,7 +308,7 @@ class ManuscriptContentResource(MongoEngineResource):
     class Meta:
         resource_name = 'manuscript_content'
         object_class = models.ManuscriptContent
-        allowed_methods = ('get', 'post')
+        allowed_methods = ('get', 'post', 'patch', 'delete')
         authentication = MultiAuthentication(AppApiKeyAuthentication(), 
                                              CookieBasicAuthentication())
         authorization = AnyoneCanViewAuthorization()

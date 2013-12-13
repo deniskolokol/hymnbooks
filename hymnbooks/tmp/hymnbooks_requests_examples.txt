@@ -56,6 +56,11 @@ curl --dump-header - -H "Content-Type: application/json" -X DELETE http://dev.hy
 
 curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"description": "ala ma kota, biedna sierota"}' http://dev.hymnbooks:8000/api/v1/manuscript/524f48d902c8f10a424aeee1/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
 
+# POST - adding content
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"title": "okładka", "page_description": "okładka", "page_index": "0k"}' http://dev.hymnbooks/api/v1/manuscript/524f48d902c8f10a424aeee1/content/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+
 
 
 
