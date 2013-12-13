@@ -260,6 +260,14 @@ class EndUserDataResource(MongoEngineResource):
 
         return bundle
 
+    def hydrate(self, bundle):
+        """
+        Fill `created_by` on POST.
+        """
+        if bundle.request.method == 'POST':
+            bundle.data['created_by'] = bundle.request.user
+        return bundle
+
 
 class SectionResource(EndUserDataResource):
     fields = EmbeddedListField(attribute='fields',
@@ -348,6 +356,8 @@ class ManuscriptResource(EndUserDataResource):
         authorization = AnyoneCanViewAuthorization()
 
     def hydrate(self, bundle):
+        bundle = super(ManuscriptResource, self).hydrate(bundle)
+        
         bundle.data = ensure_slug(bundle.data, 'slug', 'title',
                                   self.Meta.object_class)
         return bundle
