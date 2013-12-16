@@ -1,0 +1,7 @@
+{% load i18n %}
+    <div class="panel">
+      <div class="btn-group">
+        <a class="btn btn-small" href="{{ request.get_full_path }}upload/">{% trans 'Upload file' %}</a>
+        <a class="btn btn-small" href="{{ request.get_full_path }}newfolder/">{% trans 'Create folder' %}</a>
+      </div>
+    </div>

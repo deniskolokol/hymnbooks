@@ -197,7 +197,7 @@ class TemplateGenericDocument(Document):
     """
     Abstract class for all vocabulary-like documents.
     """
-    name = StringField(required=True, unique=True, help_text=_(u'Name'))
+    name = StringField(required=True, help_text=_(u'Name'))
     created = DateTimeField(help_text=_(u'Created'))
     updated = DateTimeField(default=datetime.now, help_text=_(u'Last updated'))
     created_by = ReferenceField(MongoUser, help_text=_(u'Created by'))
@@ -320,11 +320,16 @@ class MediaLibrary(EmbeddedDocument, GenericDocument):
                            help_text=_(u'File'))
     mediafile = FileField(help_text=_(u'Media file'))
     thumbnail = ImageField(size=(100, 100, True), help_text=_(u'Thumbnail'))
-    container = ReferenceField('LibraryContainer')
+    container = ReferenceField('MediaLibrary')
 
-    meta = {'collection': 'media_library'}
+    meta = {
+        'collection': 'media_library',
+        'indexes': [ # unique filenames within folder
+            {'fields': ('name', 'container'), 'unique': True}
+            ]
+        }
 
-    def save(self, **kwargs):
+    def save(self, *args, **kwargs):
         # No drafts for media.
         if self.status == 'draft':
             self.status = 'active'
@@ -333,10 +338,10 @@ class MediaLibrary(EmbeddedDocument, GenericDocument):
         # then is_file = False
 
         # Folders are not files.
-        if not is_file:
-            mediafile = None
+        if not self.is_file:
+            self.mediafile = None
 
-        super(Section, self).save(*args, **kwargs)
+        super(MediaLibrary, self).save(*args, **kwargs)
 
 
 class Voice(EmbeddedDocument):

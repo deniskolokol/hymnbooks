@@ -1,0 +1,9 @@
+{% load i18n staticfiles %}
+<form class="well" role="search" enctype="multipart/form-data" method="post">
+  <div class="form-group">
+      {% csrf_token %}
+      {{ form.errors }}
+      {{ form }}
+      <button type="submit" class="btn btn-default">{% trans 'Submit' %}</button>
+  </div>
+</form>

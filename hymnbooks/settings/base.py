@@ -43,6 +43,11 @@ TEMPLATE_LOADERS = (
 #     'django.template.loaders.eggs.Loader',
 )
 
+from django.conf.global_settings import TEMPLATE_CONTEXT_PROCESSORS
+TEMPLATE_CONTEXT_PROCESSORS += (
+    'django.core.context_processors.request',
+)
+
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -74,6 +79,7 @@ INSTALLED_APPS = (
     'hymnbooks.apps.core',
     'hymnbooks.apps.cms',
     'hymnbooks.apps.api',
+    'hymnbooks.apps.medialib',
 )
 
 AUTH_USER_MODEL = 'mongo_auth.MongoUser'

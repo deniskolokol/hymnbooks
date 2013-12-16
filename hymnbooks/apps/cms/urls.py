@@ -1,5 +1,4 @@
-from django.conf.urls import url
-from django.conf.urls import patterns
+from django.conf.urls import patterns, include, url
 
 from hymnbooks.apps.cms import views as cms_views
 
@@ -28,7 +27,6 @@ urlpatterns = patterns('',
         {'display_form': True},
         name='section_save'),
 
-    # Upload files
-    url(r'^upload/$', cms_views.FileUploadView.as_view(),
-        name='upload'),
+    # Media library (urls are /cms/lib/...)
+    url(r'^lib/', include('hymnbooks.apps.medialib.urls')),
 )

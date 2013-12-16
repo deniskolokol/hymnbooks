@@ -5,9 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="{{ STATIC_URL }}css/bootstrap.css" rel="stylesheet">
-    <!-- <link href="{{ STATIC_URL }}css/bootstrap.min.css" rel="stylesheet"> -->
-    <script src="{{ STATIC_URL }}js/jquery.js"></script>
-    <!-- <script src="{{ STATIC_URL }}js/jquery.min.js"></script> -->
+    <script src="//kdm.studiokropka.pl/js/jquery-1.9.1.js"></script>
     <title>{{ page_title|default:""}} {% if page_title %}-{% endif %} {{ resource_name }}</title>
 </head>
 <body>
@@ -16,13 +14,19 @@
       {% block header_content %}
       {% include "include/header.html" %}
       {% endblock header_content %}
+
       {% block navbar %}
       {% endblock navbar %}
     </header>
+
     <div id="main" role="main">
+      {% block action %}
+      {% endblock action %}
+      
       {% block content %}
       {% endblock content %}
     </div>
+
     <footer>
       {% include "include/footer.html" %}
     </footer>

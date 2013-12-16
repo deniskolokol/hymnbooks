@@ -5,10 +5,7 @@ from hymnbooks.apps.core import models
 class SectionForm(MongoForm):
     class Meta:
         document = models.Section
-        fields = ('title', 'description')
+        fields = ('name', 'description')
 
-    title = forms.CharField()
+    name = forms.CharField()
     description = forms.CharField(widget=forms.Textarea, required=False)
-
-class UploadFileForm(forms.Form):
-    file = forms.FileField()

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% load i18n staticfiles %}
+
+{% block action %}
+{% if form %}
+    {% include "medialib/action_form.html" %}
+{% else %}
+    {% include "medialib/actions.html" %}
+{% endif %}
+{% endblock %}
+
+{% block content %}
+    <div class="panel panel-default">
+      <div class="panel-heading"><strong>{% trans 'Media library' %}</strong></div>
+      <div class="panel-body">
+        <table class="table">
+          {% with context_objects.all|first as first_object %}
+          <thead>
+            <tr>
+              <th>&nbsp;</th>
+              <th>{% trans 'Filename' %}</th>
+              <th>{% trans 'Created' %}</th>
+              <th>{% trans 'By' %}</th>
+              <th>{% trans 'File type' %}</th>
+              <th>{% trans 'File size' %}</th>
+            </tr>
+          </thead>
+          {% endwith %}
+          <tbody>
+            {% for object in context_objects %}
+            <tr>
+              <td>
+                <a href="/cms/lib/{{ object.id }}">
+                {% if object.is_file %}
+                <img src="http://icons.iconarchive.com/icons/treetog/junior/24/document-photo-icon.png" />
+                {{ object.image.thumbnail }}
+                {% else %}
+                <img src="http://icons.iconarchive.com/icons/treetog/junior/24/folder-close-icon.png" />
+                </a>
+                {% endif %} 
+              </td>
+              <td> <a href="/cms/lib/{{ object.id }}">{{ object.name }}</a> </td>
+              <td> {{ object.created|date:"j E Y" }} </td>
+              <td> {{ object.created_by }} </td>
+              <td> {{ object.image.format }} </td>
+              <td> {{ object.image.length|filesizeformat }} </td>
+            </tr>
+            {% empty %}
+            <tr><td colSpan=6>{% trans 'No files in the library' %}.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+{% endblock %}
