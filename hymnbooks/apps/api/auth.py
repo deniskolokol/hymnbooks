@@ -5,12 +5,11 @@ from tastypie.authentication import BasicAuthentication, ApiKeyAuthentication
 from tastypie.authorization import Authorization
 from tastypie.exceptions import Unauthorized
 
-from mongoengine import signals
-
 from hymnbooks.apps.core import utils
 from hymnbooks.apps.core.models import MongoUser, MongoGroup, \
      create_api_key, control_permissions
 
+from mongoengine import signals
 
 # Auto create API key when user is saved.
 signals.post_save.connect(create_api_key, sender=MongoUser)
@@ -18,6 +17,9 @@ signals.post_save.connect(create_api_key, sender=MongoUser)
 # Control permissions duplicates.
 signals.post_save.connect(control_permissions, sender=MongoUser)
 signals.post_save.connect(control_permissions, sender=MongoGroup)
+
+# TEST
+import inspect
 
 
 class AppApiKeyAuthentication(ApiKeyAuthentication):
@@ -66,6 +68,8 @@ class AppApiKeyAuthentication(ApiKeyAuthentication):
         Custom solution for `is_authenticated` function: MongoUsers has got
         authenticated through custom api_key check.
         """
+        # print inspect.stack()[1][4], inspect.stack()[0][3]
+
         try:
             is_authenticated = self.super_self.is_authenticated(
                 request, **kwargs)
@@ -78,6 +82,7 @@ class AppApiKeyAuthentication(ApiKeyAuthentication):
         # Allow to see anything, AppAuthorization will take care of the rest.
         if request.method == 'GET':
             is_authenticated = True
+
         return is_authenticated
 
 class CookieBasicAuthentication(BasicAuthentication):
@@ -114,7 +119,7 @@ class StaffAuthorization(Authorization):
         except AttributeError:
             raise Unauthorized(_('You have to authenticate first!'))
         
-    def read_detail(self, object_list, bundle):
+    def read_detail(self, object_list, bundle):        
         try:
             return bundle.request.user.is_superuser or bundle.request.user.is_staff
         except AttributeError:
@@ -226,7 +231,7 @@ class AppAuthorization(Authorization):
         """
         Only superuser can delete lists!
         """
-        if self.user.is_superuser:
+        if self.bundle.request.user.is_superuser:
             return True
 
         raise Unauthorized("Sorry, no deletes.")

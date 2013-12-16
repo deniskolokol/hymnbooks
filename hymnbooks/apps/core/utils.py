@@ -2,8 +2,10 @@
 from django.utils.translation import ugettext_lazy as _
 from django.template.defaultfilters import slugify
 
-import collections
 import re
+import random
+import string
+import collections
 
 """
 Custom validators and exceptions.
@@ -36,8 +38,9 @@ class FieldValidator(object):
     @classmethod
     def validate(self, obj, fields, **kwargs):
         """
-        Conditions are defined by kwargs {fieldname: value}. There should be
-        at least one condition: {status: active}. Errors in conditions ignored.
+        Conditions are defined by kwargs {fieldname: value}.
+        There should be at least one condition: {status: active}.
+        Errors in conditions ignored.
         """
         if (not kwargs) or ('status' not in kwargs):
             kwargs.update({'status': 'active'})
@@ -51,18 +54,25 @@ class FieldValidator(object):
                 continue
 
         empty = []
-        for f in fields:
-            value = getattr(obj, f)
+        for field in fields:
+            value = getattr(obj, field)
             if value is None:
-                empty.append(f)
+                empty.append(field)
                 continue
 
             # Assume field can be empty, try different field types.
             if self._check_if_empty(value):
-                empty.append(f)
+                empty.append(field)
 
         if empty:
             raise MissingDataError(empty)
+
+
+def id_generator(size=6, chars=string.ascii_lowercase+string.digits):
+    """
+    Generates quazi-unique sequence from random digits and letters.
+    """
+    return ''.join(random.choice(chars) for x in range(size))
 
 
 """

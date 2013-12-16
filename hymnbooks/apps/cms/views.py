@@ -13,7 +13,7 @@ class SectionView(View):
     doc_type = models.Section
     form_class = forms.SectionForm
     template_name = 'section.html'
-    initial = {'title': '', 'description': '', 'status': 'draft'}
+    initial = {'name': '', 'description': '', 'status': 'draft'}
 
     def get(self, request, *args, **kwargs):
         context_object_name = '_'.join([self.doc_type.__name__,
@@ -74,8 +74,8 @@ class FileUploadView(View):
 
     def handle_uploaded_file(self, request):
         upload_file = request.FILES['file']
-        title = request.POST.get('title', force_unicode(upload_file))
-        image = models.ContentImage(title=title)
+        name = request.POST.get('name', force_unicode(upload_file))
+        image = models.ContentImage(name=name)
         image.image.put(upload_file, content_type = 'image/jpeg')
 
         # bookmark:

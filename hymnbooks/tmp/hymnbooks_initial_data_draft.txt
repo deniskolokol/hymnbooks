@@ -1,0 +1,128 @@
+# * * *
+# admin: group
+# POST
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"name": "Moderators", "permissions": [{"permission": "create_detail", "document_type": "Section"}, {"permission": "update_detail", "document_type": "Section"}, {"permission": "read_detail", "document_type": "Section"}, {"permission": "read_list", "document_type": "Section"}]}' http://dev.hymnbooks/api/v1/admin_group/?username=su\&api_key=b924d14ff71d27509a25f0d779ec45db8315812d
+
+
+# DELETE
+# (delete group)
+
+curl --dump-header - -H "Content-Type: application/json" -X DELETE http://dev.hymnbooks/api/v1/admin_group/52ad917b02c8f106f0fb6d99/?username=su\&api_key=b924d14ff71d27509a25f0d779ec45db8315812d
+
+
+# * * *
+# section
+# POST
+
+# full
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"name" : "support", "help_text" : "Wsparcie", "fields" : [ {"field_name": "evidence", "blank": true,"default": null,"help_text": "Dowód","nullable": true,"readonly": false,"field_type": "string","unique": false}, {"field_name" : "source","blank": true,"default": null,"help_text": "Źródło","nullable": true,"readonly": false,"field_type": "string","unique": false}, {"field_name" : "trusted","blank": true,"default": true,"help_text": "Potwierdzone","nullable": false,"readonly": false,"field_type": "boolean","unique": false}]}' http://dev.hymnbooks/api/v1/section/?username=su\&api_key=b924d14ff71d27509a25f0d779ec45db8315812d
+
+# partial info
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '
+{"help_text" : "Wsparcie", "fields": []}' http://dev.hymnbooks/api/v1/section/?username=su\&api_key=b924d14ff71d27509a25f0d779ec45db8315812d
+
+# PATCH (partial update)
+
+# Should raise an error if any of required fields is empty
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"status": "active"}' http://dev.hymnbooks/api/v1/section/52aeca9c02c8f106d10e383b/?username=su\&api_key=b924d14ff71d27509a25f0d779ec45db8315812d
+
+# Works smooth, 'cause at least one field is defined
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"status": "active", "fields": [ {"field_name" : "evidence", "blank": true,"default": null,"help_text": "Dowód","nullable": true,"readonly": false,"field_type": "string","unique": false}]}' http://dev.hymnbooks/api/v1/section/52aecb5302c8f106d10e383c/?username=su\&api_key=b924d14ff71d27509a25f0d779ec45db8315812d
+
+# DELETE
+curl --dump-header - -H "Content-Type: application/json" -X DELETE http://dev.hymnbooks/api/v1/section/52aecd8202c8f106ed2cdf6d/?username=su\&api_key=b924d14ff71d27509a25f0d779ec45db8315812d
+
+
+
+# FIX IT:
+#
+# 401!
+#
+
+# admin: group
+# POST
+# (add permission to the group)
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"permission": "create_detail", "document_type": "LibraryItem"},' http://dev.hymnbooks/api/v1/admin_group/52adbb3c02c8f105d94aa1ef/permissions/?username=su\&api_key=b924d14ff71d27509a25f0d779ec45db8315812d
+
+
+# POST
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"name": "Users", "permissions": [ {"permission" : "read_list", "document_type": "Manuscript"}]}' http://dev.hymnbooks:8000/api/v1/admin_group/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+
+# DELETE
+# (delete permission from the group)
+curl --dump-header - -H "Content-Type: application/json" -X DELETE http://dev.hymnbooks:8000/api/v1/admin_group/5257ed3202c8f10801429ef8/permissions/0/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+
+
+
+# admin: user
+# PATCH - setup group
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"group": ["/api/v1/admin_group/5257d89a02c8f107a7921246/"]}' http://dev.hymnbooks:8000/api/v1/admin_user/5249c7af02c8f1083b2a8432/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+
+# WARNING! Append and delete are different for reference fields!
+# Append Group (without re-writing the list)
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"group__append": ["/api/v1/admin_group/5257ed3202c8f10801429ef8/"]}' http://dev.hymnbooks:8000/api/v1/admin_user/5249c7af02c8f1083b2a8432/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+# Delete Group
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"group__delete": ["/api/v1/admin_group/5257ed3202c8f10801429ef8/"]}' http://dev.hymnbooks:8000/api/v1/admin_user/5249c7af02c8f1083b2a8432/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+# While adding permissions to User directly goes the same way as for Group
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '
+{"permission": "read_list", "document_type": "Manuscript"}' http://dev.hymnbooks:8000/api/v1/admin_user/5249c7af02c8f1083b2a8432/permissions/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+
+# * * *
+# section
+# POST
+
+# New field with partial info
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"help_text": "Ważne"}' http://dev.hymnbooks/api/v1/section/52adcdbc02c8f1078ea68f63/fields/?username=su\&api_key=b924d14ff71d27509a25f0d779ec45db8315812d
+
+
+# PATCH (partial update)
+
+# Not full info on the field
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"help_text": "Dowód"}' http://dev.hymnbooks:8000/api/v1/section/524df40502c8f109b07ed6ae/fields/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+# Updating reference field (embedded_section)
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"embedded_section": "/api/v1/section/52445c4d02c8f105f1570c98/"}' http://dev.hymnbooks:8000/api/v1/section/524df40502c8f109b07ed6ae/fields/1/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+# PATCH (partial update)
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"default": false}' http://localhost:8000/api/v1/section/5245f02c02c8f1062ff3023b/fields/2/
+
+
+
+
+# manuscript
+
+# POST
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"title": "Niedo Kancjonał"}' http://dev.hymnbooks/api/v1/manuscript/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+# DELETE
+
+curl --dump-header - -H "Content-Type: application/json" -X DELETE http://dev.hymnbooks:8000/api/v1/manuscript/524f47dd02c8f10a26674d1c/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+# PATCH
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"description": "ala ma kota, biedna sierota"}' http://dev.hymnbooks:8000/api/v1/manuscript/524f48d902c8f10a424aeee1/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+# POST - adding content
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"title": "okładka", "page_description": "okładka", "page_index": "0k"}' http://dev.hymnbooks/api/v1/manuscript/524f48d902c8f10a424aeee1/content/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f

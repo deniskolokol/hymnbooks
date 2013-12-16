@@ -25,31 +25,6 @@ DOCUMENT_STATUS = (('draft', _('Draft')),
                    ('suspended', _('Suspended')),
                    ('deleted', _('Deleted')))
 
-# CUSTOM TYPES
-
-class StringFieldInternal(StringField):
-    def __init__(self, *args, **kwargs):
-        super(StringFieldInternal, self).__init__(*args, **kwargs)
-    
-    def get_internal_type(self):
-        return 'StringField'
-
-class StringField10(StringFieldInternal):
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault('max_length', 10)
-        super(StringField10, self).__init__(*args, **kwargs)
-
-class StringField50(StringFieldInternal):
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault('max_length', 50)
-        super(StringField50, self).__init__(*args, **kwargs)
-    
-class StringField200(StringFieldInternal):
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault('max_length', 200)
-        super(StringField200, self).__init__(*args, **kwargs)
-
-
 # AUTHENTICATION AND AUTHORIZATION CLASSES
 """
 Permission types that fit API requirements.
@@ -72,7 +47,7 @@ DOCUMENT_TYPE = (('MongoGroup', _('Group')),
                  ('MongoUser', _('User')),
                  ('MongoUserProfile', _('User profile')),
                  ('Section', _('Data section')),
-                 ('ContentImage', _('Image')),
+                 ('LibraryItem', _('Library item')),
                  ('Manuscript', _('Manuscript')))
 
 
@@ -87,7 +62,7 @@ class GlobalPermission(EmbeddedDocument):
                                 help_text=_(u'Defined on'))
 
     def __unicode__(self):
-        return u"can %s for %s" % (self.permission, self.document_type)
+        return u"can %s of %s" % (self.permission, self.document_type)
 
 
 class PermissionControlDocument(Document):
@@ -109,11 +84,11 @@ class PermissionControlDocument(Document):
 
 class MongoGroup(PermissionControlDocument):
     """
-    Group maps MongoUsers to Permissions.
+    Groups of MongoUsers with assignment Permissions.
     """
     name = StringField(required=True, unique=True, help_text=_(u'Name'))
 
-    meta = {'collection': 'adminGroup'}
+    meta = {'collection': 'admin_group'}
 
     def __unicode__(self):
         return self.name
@@ -152,7 +127,9 @@ class MongoUser(User, PermissionControlDocument):
     api_key = StringField(required=False, max_length=256, default='')
     api_key_created = DateTimeField(help_text=_(u'Created'))
     group = ListField(ReferenceField(MongoGroup))
-    
+
+    meta = {'collection': 'admin_user'}
+
     def save(self, *args, **kwargs):
         if not self.api_key:
             self.set_api_key()
@@ -198,11 +175,11 @@ class MongoUser(User, PermissionControlDocument):
 
 class MongoUserProfile(Document):
     """
-    Profiler for MongoUser class.
+    For future use: Profiler for MongoUser class.
     """
     dummy = StringField()
 
-    meta = {'collection': 'adminUserProfile'}
+    meta = {'collection': 'user_profile'}
 
 
 # DOCUMENT TEMPLATES
@@ -220,34 +197,36 @@ class TemplateGenericDocument(Document):
     """
     Abstract class for all vocabulary-like documents.
     """
-    title = StringField(required=True, unique=True, help_text=_(u'Title'))
-    status = StringField(choices=DOCUMENT_STATUS, default='draft',
-                         help_text=_(u'Status'))
+    name = StringField(required=True, unique=True, help_text=_(u'Name'))
     created = DateTimeField(help_text=_(u'Created'))
-    last_updated = DateTimeField(help_text=_(u'Last updated'))
+    updated = DateTimeField(default=datetime.now, help_text=_(u'Last updated'))
     created_by = ReferenceField(MongoUser, help_text=_(u'Created by'))
     updated_by = ReferenceField(MongoUser, help_text=_(u'Updated by'))
+    status = StringField(choices=DOCUMENT_STATUS, default='draft',
+                         help_text=_(u'Status'))
 
     meta = {'abstract': True}
 
-    def save(self, *args, **kwargs):
+    @classmethod
+    def pre_save(cls, sender, document, **kwargs):
         """
-        Takes care of proper dates, users, etc.
+        Auto-fill dates and users.
         """
-        if not self.created:
-            self.created = datetime.now()
-        self.last_updated = datetime.now()
+        document.updated = datetime.now()
 
-        if not self.created_by:
-            if kwargs.get("request", None):
-                self.created_by = kwargs["request"].user
+        if not document.created:
+            document.created = datetime.now()
 
-        super(TemplateGenericDocument, self).save(*args, **kwargs)
+        if kwargs.get("request", None):
+            document.updated_by = kwargs["request"].user
+
+            if not document.created_by:
+                document.created_by = kwargs["request"].user
 
     def __unicode__(self):
-        return self.title
+        return self.name
 
-    
+
 class GenericDocument(TemplateGenericDocument):
     """
     Abstract class for all vocabulary-like documents with additional data
@@ -256,25 +235,11 @@ class GenericDocument(TemplateGenericDocument):
     The structure of the dictionary: 1st level keys are names of Sections,
     followed by the list of values of the fields.
     """
+    tags = ListField(StringField(), help_text=_(u'Tags'))
     sections = ListField(EmbeddedDocumentField('SectionData'),
                          help_text=_(u'Sections'))
 
     meta = {'abstract': True}
-
-
-class GenericSlugDocument(GenericDocument):
-    """
-    Abstract class for all vocabularies with slugs.
-    """
-    slug = StringField(unique=True, help_text=_(u'Slug'))
-
-    meta = {'abstract': True}
-
-    def save(self, *args, **kwargs):
-        if (self.slug is None) or (self.slug.strip() == ''):
-            self.slug = utils.slugify_unique(self.title, self.__class__)
-
-        super(GenericSlugDocument, self).save(*args, **kwargs)
 
 
 # MODERATOR'S DOCUMENTS
@@ -324,7 +289,7 @@ class Section(TemplateGenericDocument):
     fields = ListField(EmbeddedDocumentField(FieldDefinition),
                        help_text=_(u'Fields'))
 
-    meta = {'collection': 'metaSection'}
+    meta = {'collection': 'cms_section'}
 
     def save(self, *args, **kwargs):
         utils.FieldValidator().validate(self, ('fields',))
@@ -344,23 +309,42 @@ class SectionData(EmbeddedDocument):
 
 # END-USER DATA DOCUMENTS
 
-class ContentImage(GenericDocument):
-    """
-    Images of manuscript content.
+# LIBRARY
 
-    Not for embedding, but for referensing from other documents
-    (in particular from Manuscript, Content, and eventually Piece).
+class MediaLibrary(EmbeddedDocument, GenericDocument):
     """
-    image = ImageField(thumbnail_size=(150, 100, True))
-    preview = ImageField(size=(300, 200, True))
+    Tree structure: containers can reference to another containes,
+    which means a folder in another folder.
+    """
+    is_file = BooleanField(required=True, default=True,
+                           help_text=_(u'File'))
+    mediafile = FileField(help_text=_(u'Media file'))
+    thumbnail = ImageField(size=(100, 100, True), help_text=_(u'Thumbnail'))
+    container = ReferenceField('LibraryContainer')
+
+    meta = {'collection': 'media_library'}
+
+    def save(self, **kwargs):
+        # No drafts for media.
+        if self.status == 'draft':
+            self.status = 'active'
+
+        # Check if there are items referencing to this one as to a container,
+        # then is_file = False
+
+        # Folders are not files.
+        if not is_file:
+            mediafile = None
+
+        super(Section, self).save(*args, **kwargs)
 
 
 class Voice(EmbeddedDocument):
     """
     Separate voice / instrument in the scores (either voice or instrument).
     """
-    voice_type = StringField200()
-    voice_name = StringField200()
+    voice_type = StringField()
+    voice_name = StringField()
     description = StringField()
 
 
@@ -372,8 +356,8 @@ class Piece(GenericDocument, EmbeddedDocument):
     voices = ListField(EmbeddedDocumentField(Voice), help_text=_(u'Voices'))
     incipit = StringField(help_text=_(u'Incipit'))
     scores_mxml = StringField(help_text=_(u'Original MusicXML'))
-    scores_dict = DictField() # converted from XML for indexing and searching by notes
-    audio = FileField(help_text=_(u'Audio example'))
+    scores_dict = DictField(help_text=_(u'Scores dictionary')) # converted from XML for indexing and searching by notes
+    media = ListField(ReferenceField(MediaLibrary))
 
     def save(self, *args, **kwargs):
         """
@@ -396,23 +380,24 @@ class ManuscriptContent(GenericDocument, EmbeddedDocument):
     """
     Actual Manuscript content (scan parts and description).
     """
-    page_index = StringField50(help_text=_(u'Page index'))
+    page_index = StringField(help_text=_(u'Page index'))
     page_description = StringField(help_text=_(u'Description'))
-    image = ReferenceField(ContentImage)
+    media = ListField(ReferenceField(MediaLibrary))
 
     def clean(self):
         utils.FieldValidator().validate(self, ('page_index',))
 
 
-class Manuscript(GenericSlugDocument):
+class Manuscript(GenericDocument):
     """
     Main container for manuscripts.
     """
+    title = StringField(required=True, help_text=_(u'Title'))
     description = StringField(help_text=_(u'Description'))
     content = ListField(EmbeddedDocumentField(ManuscriptContent),
                         help_text=_(u'Content'))
     pieces = ListField(EmbeddedDocumentField(Piece), help_text=_(u'Pieces'))
-    image = ListField(ReferenceField(ContentImage))
+    media = ListField(ReferenceField(MediaLibrary))
 
     def clean(self):
         utils.FieldValidator().validate(self, ('content',))
@@ -439,3 +424,11 @@ def control_permissions(sender, **kwargs):
             document.ensure_no_duplicates_permissions()
         except:
             pass # Do nothing.
+
+
+from mongoengine import signals
+
+signals.pre_save.connect(Section.pre_save, sender=Section)
+signals.pre_save.connect(Piece.pre_save, sender=Piece)
+signals.pre_save.connect(ManuscriptContent.pre_save, sender=ManuscriptContent)
+signals.pre_save.connect(Manuscript.pre_save, sender=Manuscript)

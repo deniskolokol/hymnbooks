@@ -1,6 +1,6 @@
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.authentication import Authentication, MultiAuthentication
-from tastypie.authorization import ReadOnlyAuthorization
+from tastypie.authorization import Authorization, ReadOnlyAuthorization
 from tastypie_mongoengine.resources import MongoEngineResource
 from tastypie_mongoengine.fields import *
 
@@ -150,45 +150,54 @@ class DocumentPermissionResource(MongoEngineResource):
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
-        authorization = StaffAuthorization()
+        # TEST ONLY! Switch back after solving the authentication problem!
+        # authorization = StaffAuthorization()
+        authorization = Authorization()
 
 
 class GroupResource(MongoEngineResource):
-    permissions = EmbeddedListField(
-        of='hymnbooks.apps.api.resources.DocumentPermissionResource',
-        attribute='permissions', full=True, null=True)
-
+    permissions = EmbeddedListField(attribute='permissions',
+                                    of='hymnbooks.apps.api.resources.DocumentPermissionResource',
+                                    full=True, null=True)
     class Meta:
         object_class = models.MongoGroup
         resource_name = 'admin_group'
         excludes = ('id',)
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete',)
-        authentication = MultiAuthentication(AppApiKeyAuthentication(), 
+        authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
-        authorization = StaffAuthorization()
+        # TEST ONLY! Switch back after solving the authentication problem!
+        # authorization = StaffAuthorization()
+        authorization = Authorization()
+
+    def obj_get(self, bundle, **kwargs):
+        bundle = super(GroupResource, self).obj_get(bundle, **kwargs)
+        return bundle
 
 
 class UserResource(MongoEngineResource):
-    group = ReferencedListField(
-        of='hymnbooks.apps.api.resources.GroupResource',
-        attribute='group', full=True, null=True)
-    permissions = EmbeddedListField(
-        of='hymnbooks.apps.api.resources.DocumentPermissionResource',
-        attribute='permissions', full=True, null=True)
+    group = ReferencedListField(attribute='group',
+                                of='hymnbooks.apps.api.resources.GroupResource',
+                                full=True, null=True)
+    permissions = EmbeddedListField(attribute='permissions',
+                                    of='hymnbooks.apps.api.resources.DocumentPermissionResource',
+                                    full=True, null=True)
 
     class Meta:
         resource_name = 'admin_user'
         object_class = models.MongoUser
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
-        # excludes = ('id', 'password',)
+        excludes = ('id', 'password',)
         filtering = {
             'username': ALL, # Filters are tuned to handle Authentication in the URL.
             'is_active': ('exact', 'ne'),
             'date_joined': DATE_FILTERS
             }
-        authentication = MultiAuthentication(AppApiKeyAuthentication(), 
+        authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
-        authorization = StaffAuthorization()
+        # TEST ONLY! Switch back after solving the authentication problem!
+        # authorization = StaffAuthorization()
+        authorization = Authorization()
 
     def hydrate(self, bundle):
         action_params = dict((k, v) for k, v in bundle.data.iteritems()
@@ -233,7 +242,9 @@ class FieldDefinitionResource(MongoEngineResource):
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
-        authorization = AppAuthorization()
+        # TEST ONLY! Switch back after solving the authentication problem!
+        # authorization = AppAuthorization()
+        authorization = Authorization()
 
     def hydrate(self, bundle):
         bundle.data = ensure_slug(bundle.data, 'field_name', 'help_text')
@@ -247,9 +258,11 @@ class EndUserDataResource(MongoEngineResource):
                                 to='hymnbooks.apps.api.resources.UserResource',
                                 full=True)
     class Meta:
-        authorization = AppAuthorization()
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
+        # TEST ONLY! Switch back after solving the authentication problem!
+        # authorization = AppAuthorization()
+        authorization = Authorization()
 
     def dehydrate(self, bundle):
         if bundle.request.method == 'GET':
@@ -285,48 +298,56 @@ class SectionResource(EndUserDataResource):
         always_return_data = True
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
-        authorization = AppAuthorization()
+        # TEST ONLY! Switch back after solving the authentication problem!
+        # authorization = AppAuthorization()
+        authorization = Authorization()
 
     def hydrate(self, bundle):
-        bundle.data = ensure_slug(bundle.data, 'title', 'help_text',
+        bundle = super(SectionResource, self).hydrate(bundle)
+
+        bundle.data = ensure_slug(bundle.data, 'name', 'help_text',
                                   self.Meta.object_class)
         return bundle
 
 
-class ContentImageResource(EndUserDataResource):
-    """
-    Content Image data.
-    """
+class MediaLibraryResource(EndUserDataResource):
+    container = ReferenceField(attribute='container',
+                               to='hymnbooks.apps.api.resources.MediaLibraryResource',
+                               full=True)
+
     class Meta:
-        resource_name = 'content_image'
-        object_class = models.ContentImage
-        allowed_methods = ('get', 'patch', 'delete')
-        filtering = {
-            'status': ALL,
-            'created': DATE_FILTERS,
-            'last_updated': DATE_FILTERS,
-            }
-        excludes = ('id',)
-        authorization = AnyoneCanViewAuthorization()
-        authentication = MultiAuthentication(AppApiKeyAuthentication(), 
+        object_class = models.MediaLibrary
+        resource_name = 'media_library'
+        allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
+        always_return_data = True
+        authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
+        authorization = AnyoneCanViewAuthorization()
 
 
 class ManuscriptContentResource(MongoEngineResource):
+    media = ReferencedListField(attribute='media',
+                                of='hymnbooks.apps.api.resources.MediaLibraryResource',
+                                full=True, null=True)
+
     class Meta:
         resource_name = 'manuscript_content'
         object_class = models.ManuscriptContent
         allowed_methods = ('get', 'post', 'patch', 'delete')
-        authentication = MultiAuthentication(AppApiKeyAuthentication(), 
+        authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
         authorization = AnyoneCanViewAuthorization()
 
 
 class PieceResource(MongoEngineResource):
+    media = ReferencedListField(attribute='media',
+                                of='hymnbooks.apps.api.resources.MediaLibraryResource',
+                                full=True, null=True)
+
     class Meta:
         object_class = models.Piece
         allowed_methods = ('get', 'post')
-        authentication = MultiAuthentication(AppApiKeyAuthentication(), 
+        authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
         authorization = AnyoneCanViewAuthorization()
 
@@ -341,6 +362,9 @@ class ManuscriptResource(EndUserDataResource):
     pieces = EmbeddedListField(attribute='pieces',
                                of='hymnbooks.apps.api.resources.PieceResource',
                                full=True, null=True)
+    media = EmbeddedListField(attribute='media',
+                              of='hymnbooks.apps.api.resources.MediaLibraryResource',
+                              full=True, null=True)
 
     class Meta:
         object_class = models.Manuscript
@@ -351,13 +375,17 @@ class ManuscriptResource(EndUserDataResource):
             'last_updated': DATE_FILTERS,
             }
         excludes = ('id',)
-        authentication = MultiAuthentication(AppApiKeyAuthentication(), 
+        always_return_data = True
+        authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
         authorization = AnyoneCanViewAuthorization()
 
     def hydrate(self, bundle):
+        """
+        Fill `name` with random string, if empty.
+        """
         bundle = super(ManuscriptResource, self).hydrate(bundle)
-        
-        bundle.data = ensure_slug(bundle.data, 'slug', 'title',
-                                  self.Meta.object_class)
+
+        if (bundle.data['name'] is None) or (bundle.data['name'].strip() == ''):
+            bundle.data['name'] = utils.id_generator(size=20)
         return bundle

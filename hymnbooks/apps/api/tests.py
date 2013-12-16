@@ -1,12 +1,10 @@
 # encoding:utf-8 #
 
-import random
-import string
 from mongoengine import connect, connection, register_connection
 from mongoengine.context_managers import switch_db
 from tastypie.test import ResourceTestCase
 from mixer.backend.mongoengine import mixer
-from hymnbooks.apps.core import models
+from hymnbooks.apps.core import models, utils
 from django.conf import settings
 
 
@@ -15,12 +13,6 @@ def get_list_choices(deserialized_resp):
     Returns choice list extracted from deserialized response.
     """
     return [item['id'] for item in deserialized_resp['objects']]
-
-def id_generator(size=6, chars=string.ascii_lowercase+string.digits):
-    """
-    Generates quazi-unique sequence from random digits and letters.
-    """
-    return ''.join(random.choice(chars) for x in range(size))
 
 
 class MongoResourceTestCase(ResourceTestCase):

@@ -1,0 +1,1 @@
+{ "_id" : { "$oid" : "52adbb3c02c8f105d94aa1ef" }, "permissions" : [ { "permission" : "update_detail", "document_type" : "Section" }, { "permission" : "create_detail", "document_type" : "Section" }, { "permission" : "read_detail", "document_type" : "Section" }, { "permission" : "read_list", "document_type" : "Section" } ], "name" : "Moderators" }
