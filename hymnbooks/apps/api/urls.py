@@ -3,7 +3,7 @@ from hymnbooks.apps.api.resources import *
 from django.conf.urls import *
 from tastypie.api import Api
 
-v1_api = Api(api_name='v1')
+v1_api = Api(api_name=API_NAME)
 
 v1_api.register(GroupResource())
 v1_api.register(FieldTypeResource())

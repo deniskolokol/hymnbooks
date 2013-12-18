@@ -4,6 +4,7 @@ from tastypie.authorization import Authorization, ReadOnlyAuthorization
 from tastypie_mongoengine.resources import MongoEngineResource
 from tastypie_mongoengine.fields import *
 
+from hymnbooks.settings.base import API_NAME
 from hymnbooks.apps.core import models, utils
 from hymnbooks.apps.api.auth import AppApiKeyAuthentication, CookieBasicAuthentication, \
      AnyoneCanViewAuthorization, StaffAuthorization, AppAuthorization
@@ -256,7 +257,11 @@ class FieldDefinitionResource(MongoEngineResource):
 class EndUserDataResource(MongoEngineResource):
     created_by = ReferenceField(attribute='created_by',
                                 to='hymnbooks.apps.api.resources.UserResource',
-                                full=True)
+                                full=True, null=True)
+    updated_by = ReferenceField(attribute='updated_by',
+                                to='hymnbooks.apps.api.resources.UserResource',
+                                full=True, null=True)
+
     class Meta:
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
@@ -264,13 +269,25 @@ class EndUserDataResource(MongoEngineResource):
         # authorization = AppAuthorization()
         authorization = Authorization()
 
-    def dehydrate(self, bundle):
-        if bundle.request.method == 'GET':
-            bundle.data['created_by_resource_uri'] = \
-              '/api/v1/admin_user/%s/' % bundle.data['created_by'].obj.id
-            bundle.data['created_by'] = \
-              bundle.data['created_by'].obj.__unicode__()
+    def reference_to_resource(self, field, data=None, resource_uri=''):
+        key = field + '_resource_uri'
+        if data is None:
+            return {field: None, key: None}
 
+        return {field: data.obj, key: '%s%s/' % \
+                (resource_uri, str(data.obj.id))}
+        
+    def dehydrate(self, bundle, *args):
+        if bundle.request.method == 'GET':
+            fields = list(set(['created_by', 'updated_by'] + list(args)))
+
+            for field in fields:
+                obj_related = getattr(self, field)
+                related = obj_related.get_related_resource(self)                
+
+                bundle.data.update(
+                    self.reference_to_resource(field, bundle.data[field],
+                                               related.get_resource_uri()))
         return bundle
 
     def hydrate(self, bundle):
@@ -289,12 +306,14 @@ class SectionResource(EndUserDataResource):
     class Meta:
         object_class = models.Section
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
+        excludes = ('id',)
         filtering = {
+            'created_by': ALL,
+            'updated_by': ALL,
             'status': ('exact', 'ne'),
             'created': DATE_FILTERS,
             'last_updated': DATE_FILTERS,
             }
-        excludes = ('id',)
         always_return_data = True
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
@@ -313,16 +332,34 @@ class SectionResource(EndUserDataResource):
 class MediaLibraryResource(EndUserDataResource):
     container = ReferenceField(attribute='container',
                                to='hymnbooks.apps.api.resources.MediaLibraryResource',
-                               full=True)
+                               null=True, full=True)
 
     class Meta:
         object_class = models.MediaLibrary
         resource_name = 'media_library'
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
+        excludes = ('id', 'mediafile', 'thumbnail', 'container_safe')
+        filtering = {
+            'created_by': ALL,
+            'updated_by': ALL,
+            'status': ('exact', 'ne'),
+            'created': DATE_FILTERS,
+            'last_updated': DATE_FILTERS,
+            'container': ALL,
+            'is_file': ALL
+            }
         always_return_data = True
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
+        # TEST ONLY! Switch back after solving the authentication problem!
         authorization = AnyoneCanViewAuthorization()
+        # authorization = Authorization()
+
+    def dehydrate(self, bundle):
+        args = ('container',)
+        bundle = super(MediaLibraryResource, self).dehydrate(bundle, *args)
+
+        return bundle
 
 
 class ManuscriptContentResource(MongoEngineResource):

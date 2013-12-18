@@ -119,3 +119,6 @@ LOGGING = {
         },
     }
 }
+
+# Api name
+API_NAME = 'v1'

@@ -7,6 +7,8 @@ from datetime import datetime
 
 from hymnbooks.apps.core import utils
 
+import inspect
+
 
 """
 Document status:
@@ -207,21 +209,23 @@ class TemplateGenericDocument(Document):
 
     meta = {'abstract': True}
 
-    @classmethod
-    def pre_save(cls, sender, document, **kwargs):
+    def save(self, force_insert=False, validate=True, 
+             clean=True, write_concern=None, cascade=None, 
+             cascade_kwargs=None, _refs=None, **kwargs):
         """
         Auto-fill dates and users.
         """
-        document.updated = datetime.now()
-
-        if not document.created:
-            document.created = datetime.now()
+        self.updated = datetime.now()
+        if not self.created:
+            self.created = self.updated
 
         if kwargs.get("request", None):
-            document.updated_by = kwargs["request"].user
+            self.updated_by = kwargs["request"].user
+            if not self.created_by:
+                self.created_by = self.updated_by
 
-            if not document.created_by:
-                document.created_by = kwargs["request"].user
+        super(TemplateGenericDocument, self).save(force_insert, validate,
+            clean, write_concern, cascade, cascade_kwargs, _refs, **kwargs)
 
     def __unicode__(self):
         return self.name
@@ -321,70 +325,81 @@ class MediaLibrary(GenericDocument):
     mediafile = FileField(help_text=_(u'Media file'))
     thumbnail = ImageField(size=(100, 100, True), help_text=_(u'Thumbnail'))
     container = ReferenceField('MediaLibrary', reverse_delete_rule=CASCADE)
-
+    container_safe = ReferenceField('MediaLibrary') # Safe link to a container:
+                                                    # updated only when it's safe
+                                                    # to update.
     meta = {
         'collection': 'media_library',
-
-        # Warning! Index is not being created automatically!
-        # Temporary solution is to ensure its creation via mongodb console:
-        # db.media_library.ensureIndex({ name: 1, container: 1 }, { unique: true })
         'indexes': [
             {'fields': ('name', 'container', ), 'unique': True}
             ]
         }
-
-    def save(self, *args, **kwargs):
-        # No drafts for media.
-        if self.status == 'draft':
-            self.status = 'active'
-
-        # Folders are not files.
-        if not self.is_file:
-            self.mediafile = None
-
-        if self.container:
-
-            # Can store elements in folders only.
-            if self.container.is_file:
-                raise utils.WrongTypeError('cannot insert object into file!')
-
-            # Destination container cannot be lower in the
-            # hierarchy of folders.
-            if not self.is_file:
-                if self.higher_in_hierarchy(self.container):
-                    raise utils.WrongDesctinationError(
-                        'cannot insert object into this folder!')
-
-        super(MediaLibrary, self).save(*args, **kwargs)
-
-    def higher_in_hierarchy(self, container):
-        """
-        Recursively walks down, gathering folders in lower part of hierarchy,
-        and then checks if `container` is among them.
-        """
-        def recurse(folder):
-            try:
-                children = list(folder.__class__.objects.filter(container=folder, is_file=False))
-            except ValidationError:
-                # Validation only makes sense if folder is not being created.
-                return
-
-            if len(children) == 0:
-                return
-            else:
-                lower_hierarchy.extend(list(children))
-                for child in children:
-                    recurse(child)
-
-        lower_hierarchy = []
-        recurse(self)
-        return container in lower_hierarchy
 
     @classmethod
     def pre_delete(cls, sender, document, **kwargs):
         if document.mediafile is not None:
             document.mediafile.delete()
 
+
+    def save(self, force_insert=False, validate=True, 
+             clean=True, write_concern=None, cascade=None, 
+             cascade_kwargs=None, _refs=None, **kwargs):
+
+        # No drafts in Media library.
+        if self.status == 'draft':
+            self.status = 'active'
+
+        # Folders are not files.
+        if not self.is_file:
+            self.mediafile = None
+            
+        if self.container:
+
+            # Can store elements in folders only.
+            if self.container.is_file:
+                self.container = self.container_safe # reverse change
+                raise utils.WrongTypeError('cannot insert object into file!')
+
+            # Destination container cannot be lower in the hierarchy of folders.
+            # Check only for containers that already exist in the db.
+            if (not self.is_file) and (self.id is not None):
+
+                if self.higher_in_hierarchy(self, self.container):
+                    self.container = self.container_safe # reverse change
+                    raise utils.WrongDesctinationError(
+                        'cannot insert object into this folder!')
+
+            self.container_safe = self.container # solidify
+
+        super(MediaLibrary, self).save(force_insert, validate, clean,
+            write_concern, cascade, cascade_kwargs, _refs, **kwargs)
+
+    @staticmethod
+    def higher_in_hierarchy(document, container):
+        """
+        Recursively walks down, gathering folders in lower part of hierarchy,
+        and then checks if `container` is among them.
+
+        Makes sense only for existing folders. If `document` is a newly created
+        folder, throws ValidationError.
+        """
+        def _collect_lower_level_containers(folder):
+            """
+            Recurse down through hierarchy to collect folders from lower levels.
+            """
+            children = folder.__class__.objects.filter(container=folder,
+                                                       is_file=False)
+            if children:
+                lower_level_containers.extend(list(children))
+                for child in children:
+                    _collect_lower_level_containers(child)
+            return
+
+        lower_level_containers = list()
+        _collect_lower_level_containers(document)
+
+        return container in lower_level_containers
+            
 
 class Voice(EmbeddedDocument):
     """
@@ -452,6 +467,8 @@ class Manuscript(GenericDocument):
 
 # SIGNALS
 
+from mongoengine import signals
+
 def create_api_key(sender, **kwargs):
     """
     Signal: automatic ApiKey creation for MongoUser.
@@ -473,15 +490,5 @@ def control_permissions(sender, **kwargs):
             pass # Do nothing.
 
 
-from mongoengine import signals
-
-signals.pre_save.connect(Section.pre_save, sender=Section)
-
-signals.pre_save.connect(Piece.pre_save, sender=Piece)
-
-signals.pre_save.connect(ManuscriptContent.pre_save, sender=ManuscriptContent)
-
-signals.pre_save.connect(Manuscript.pre_save, sender=Manuscript)
-
-signals.pre_save.connect(MediaLibrary.pre_save, sender=MediaLibrary)
+# signals.pre_save.connect(MediaLibrary.pre_save, sender=MediaLibrary)
 signals.pre_delete.connect(MediaLibrary.pre_delete, sender=MediaLibrary)

@@ -108,3 +108,29 @@ curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"grou
 
 curl --dump-header - -H "Content-Type: application/json" -X POST --data '
 {"permission": "read_list", "document_type": "Manuscript"}' http://dev.hymnbooks:8000/api/v1/admin_user/5249c7af02c8f1083b2a8432/permissions/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+
+
+
+
+
+# container
+# GET - view folder content
+
+/api/v1/media_library/?format=json&container=52b1d33002c8f109859124bd
+
+# POST - through web-app /cms/lib/
+
+# PATCH move a folder:
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"container": null}' http://dev.hymnbooks/api/v1/media_library/52b1d2ec02c8f109717418e2/?username=su\&api_key=b924d14ff71d27509a25f0d779ec45db8315812d
+
+# PATCH move a folder into another folder of lower hierarchy (should throw an error):
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"container": "/api/v1/media_library/52b1d33602c8f109859124be/"}' http://dev.hymnbooks/api/v1/media_library/52b1d2ec02c8f109717418e2/?username=su\&api_key=b924d14ff71d27509a25f0d779ec45db8315812d
+
+# DELETE folder or file (Warning! It's being deleted with all the content, so, it's better to check its content before deleting with GET)
+
+curl --dump-header - -H "Content-Type: application/json" -X DELETE http://dev.hymnbooks/api/v1/media_library/52b1d2fd02c8f109717418e5/?username=su\&api_key=b924d14ff71d27509a25f0d779ec45db8315812d
+
+# DELETE file is the same:
+curl --dump-header - -H "Content-Type: application/json" -X DELETE http://dev.hymnbooks/api/v1/media_library/52b1fcc402c8f10b7b318454/?username=su\&api_key=b924d14ff71d27509a25f0d779ec45db8315812d
