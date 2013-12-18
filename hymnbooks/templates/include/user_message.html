@@ -1,0 +1,9 @@
+{% load i18n %}
+    {% autoescape off %}
+    {% if user_message %}
+    <div class="alert alert-{{ user_message.status }}">
+      <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+      {{ user_message.message }}
+    </div>
+    {% endif %}
+    {% endautoescape %}
