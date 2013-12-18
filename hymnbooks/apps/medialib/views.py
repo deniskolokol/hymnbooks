@@ -3,10 +3,13 @@ from django.shortcuts import render, redirect
 from django.views.generic.base import View
 from django.template import RequestContext
 from django.utils.encoding import force_unicode
+from django.http import HttpResponseBadRequest, HttpResponse
+from django.utils.translation import ugettext as _
 
-
-from hymnbooks.apps.core import models
+from hymnbooks.apps.core import models, utils
 from hymnbooks.apps.medialib import forms
+
+import mongoengine
 
 
 # HELPER FUNCTIONS
@@ -29,7 +32,7 @@ def get_MediaLibrary(request, *args, **kwargs):
     else:
         lib_filter.update({'container': None})
 
-    return models.MediaLibrary.objects.filter(**lib_filter)
+    return models.MediaLibrary.objects.filter(**lib_filter).order_by('is_file', 'name')
 
 
 def get_container(**kwargs):
@@ -53,7 +56,8 @@ class MediaLibraryView(View):
     def get(self, request, *args, **kwargs):
         context_objects = get_MediaLibrary(request, *args, **kwargs)
         return render(request, self.template_name,
-                      {'form': None, 'context_objects': context_objects},
+                      {'form': None, 'context_objects': context_objects,
+                       'user_message': request.session.pop('user_message', {})},
                       context_instance=RequestContext(request))
 
 
@@ -64,15 +68,18 @@ class FileUploadView(View):
     def get(self, request, *args, **kwargs):
         context_objects = get_MediaLibrary(request, *args, **kwargs)
         return render(request, self.template_name,
-                      {'form': self.form_class(), 'context_objects': context_objects},
+                      {'form': self.form_class(), 'context_objects': context_objects,
+                       'user_message': request.session.pop('user_message', {})},
                       context_instance=RequestContext(request))
 
     def post(self, request, *args, **kwargs):
         form = self.form_class(request.POST, request.FILES)
         if form.is_valid():
             container = get_container(**kwargs)
-            self.handle_upload(form.cleaned_data['file'], container, request)
+            request.session['user_message'] = self.handle_upload(
+                form.cleaned_data['file'], container, request)
             return reverse_back(**kwargs)
+
         return render(request, self.template_name, {'form': form},
                       context_instance=RequestContext(request))
 
@@ -87,8 +94,14 @@ class FileUploadView(View):
         mediafile = models.MediaLibrary(name=force_unicode(in_memory.name),
                                         container=container)
         mediafile.mediafile.put(in_memory, content_type=in_memory.content_type)
-        mediafile.save(request=request)
-        return
+        try:
+            mediafile.save(request=request)
+        except mongoengine.errors.NotUniqueError:
+            message = _('File with this name already exists!')
+            return utils.UserMessage(message).danger()
+
+        return # no news, good news
+
 
 class NewFolderView(View):
     template_name = 'medialib.html'
@@ -97,15 +110,18 @@ class NewFolderView(View):
     def get(self, request, *args, **kwargs):
         context_objects = get_MediaLibrary(request, *args, **kwargs)
         return render(request, self.template_name,
-                      {'form': self.form_class(), 'context_objects': context_objects},
+                      {'form': self.form_class(), 'context_objects': context_objects,
+                       'user_message': request.session.pop('user_message', {})},
                       context_instance=RequestContext(request))
 
     def post(self, request, *args, **kwargs):
         form = self.form_class(request.POST)
         if form.is_valid():
             container = get_container(**kwargs)
-            self.create_folder(form.cleaned_data['name'], container, request)
+            request.session['user_message'] = self.create_folder(
+                form.cleaned_data['name'], container, request)
             return reverse_back(**kwargs)
+
         return render(request, self.template_name, {'form': form},
                       context_instance=RequestContext(request))
 
@@ -119,5 +135,28 @@ class NewFolderView(View):
 
         folder = models.MediaLibrary(name=name, container=container,
                                      is_file=False)
-        folder.save(request=request)
-        return
+        try:
+            folder.save(request=request)
+        except mongoengine.errors.NotUniqueError:
+            message = _('Folder with this name already exists!')
+            return utils.UserMessage(message).danger()
+
+        return # no news, good news
+
+
+class MediaLibraryDelete(View):
+    template_name = 'medialib.html'
+
+    def get(self, request, **kwargs):
+        media_item = models.MediaLibrary.objects.get(id=kwargs['id'])
+        print media_item
+
+        rev_kwargs = {}
+        if media_item.container:
+            rev_kwargs = {'container': media_item.container.id}
+        try:
+            media_item.delete()
+        except Exception as e:
+            request.session['user_message'] = utils.UserMessage(message).danger(str(e))
+            
+        return reverse_back(**rev_kwargs)

@@ -17,6 +17,23 @@ class MissingDataError(Exception):
         self.message = self.message % ', '.join(fields)
         Exception.__init__(self, self.message)
 
+
+class WrongTypeError(Exception):
+    message = _(u'Wrong type: %s')
+    
+    def __init__(self, field):
+        self.message = self.message % field
+        Exception.__init__(self, self.message)
+
+
+class WrongDesctinationError(Exception):
+    message = _(u'Wrong destination: %s')
+    
+    def __init__(self, field):
+        self.message = self.message % field
+        Exception.__init__(self, self.message)
+
+        
 class FieldValidator(object):
     """
     Validates if fields are None or empty with given conditions.
@@ -66,6 +83,58 @@ class FieldValidator(object):
 
         if empty:
             raise MissingDataError(empty)
+
+
+class UserMessage():
+    statuses = ('info', 'warning', 'success', 'danger')
+    status = 'info'
+    message = ''
+
+    def __init__(self, message=None, status=None):
+        self.set_message(message)
+        self.set_status(status)
+
+    def __str__(self):
+        return "%s: %s" % (self.status, self.message)
+
+    def __unicode__(self):
+        return unicode(self.__str__())
+
+    def _status(self, status=None):
+        if status in self.statuses:
+            return status
+        else:
+            return 'info' # default
+
+    def set_status(self, status=None):
+        self.status = self._status(status)
+
+    def set_message(self, message=None):
+        if (message is not None) and (message.strip() != ''):
+            self.message = message
+
+    def serialize(self):
+        return {'status': self.status, 'message': self.message}
+
+    def info(self, message=None):
+        self.set_message(message)
+        self.set_status()
+        return self.serialize()
+
+    def warning(self, message=None):
+        self.set_message(message)
+        self.set_status('warning')
+        return self.serialize()
+
+    def danger(self, message=None):
+        self.set_message(message)
+        self.set_status('danger')
+        return self.serialize()
+
+    def success(self, message=None):
+        self.set_message(message)
+        self.set_status('success')
+        return self.serialize()
 
 
 def id_generator(size=6, chars=string.ascii_lowercase+string.digits):

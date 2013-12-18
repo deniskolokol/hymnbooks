@@ -3,6 +3,7 @@
 {% load i18n staticfiles %}
 
 {% block action %}
+{% include "include/user_message.html" %}
 {% if form %}
     {% include "medialib/action_form.html" %}
 {% else %}
@@ -24,6 +25,7 @@
               <th>{% trans 'By' %}</th>
               <th>{% trans 'File type' %}</th>
               <th>{% trans 'File size' %}</th>
+              <th>&nbsp;</th>
             </tr>
           </thead>
           {% endwith %}
@@ -43,8 +45,17 @@
               <td> <a href="/cms/lib/{{ object.id }}">{{ object.name }}</a> </td>
               <td> {{ object.created|date:"j E Y" }} </td>
               <td> {{ object.created_by }} </td>
-              <td> {{ object.image.format }} </td>
-              <td> {{ object.image.length|filesizeformat }} </td>
+              <td> {{ object.mediafile.content_type }} </td>
+              <td> {% if object.is_file %} {{ object.mediafile.length|filesizeformat }} {% endif %}</td>
+              <td>
+                <a href="/cms/lib/{{ object.id }}/delete/">
+                {% if object.is_file %}
+                <img src="http://icons.iconarchive.com/icons/custom-icon-design/pretty-office-9/24/delete-file-icon.png" />
+                {% else %}
+                <img src="http://icons.iconarchive.com/icons/custom-icon-design/pretty-office-5/24/Folder-Delete-icon.png" />
+                {% endif %}
+                </a>
+              </td>
             </tr>
             {% empty %}
             <tr><td colSpan=6>{% trans 'No files in the library' %}.</td></tr>

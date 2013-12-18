@@ -311,7 +311,7 @@ class SectionData(EmbeddedDocument):
 
 # LIBRARY
 
-class MediaLibrary(EmbeddedDocument, GenericDocument):
+class MediaLibrary(GenericDocument):
     """
     Tree structure: containers can reference to another containes,
     which means a folder in another folder.
@@ -320,12 +320,16 @@ class MediaLibrary(EmbeddedDocument, GenericDocument):
                            help_text=_(u'File'))
     mediafile = FileField(help_text=_(u'Media file'))
     thumbnail = ImageField(size=(100, 100, True), help_text=_(u'Thumbnail'))
-    container = ReferenceField('MediaLibrary')
+    container = ReferenceField('MediaLibrary', reverse_delete_rule=CASCADE)
 
     meta = {
         'collection': 'media_library',
-        'indexes': [ # unique filenames within folder
-            {'fields': ('name', 'container'), 'unique': True}
+
+        # Warning! Index is not being created automatically!
+        # Temporary solution is to ensure its creation via mongodb console:
+        # db.media_library.ensureIndex({ name: 1, container: 1 }, { unique: true })
+        'indexes': [
+            {'fields': ('name', 'container', ), 'unique': True}
             ]
         }
 
@@ -334,14 +338,52 @@ class MediaLibrary(EmbeddedDocument, GenericDocument):
         if self.status == 'draft':
             self.status = 'active'
 
-        # Check if there are items referencing to this one as to a container,
-        # then is_file = False
-
         # Folders are not files.
         if not self.is_file:
             self.mediafile = None
 
+        if self.container:
+
+            # Can store elements in folders only.
+            if self.container.is_file:
+                raise utils.WrongTypeError('cannot insert object into file!')
+
+            # Destination container cannot be lower in the
+            # hierarchy of folders.
+            if not self.is_file:
+                if self.higher_in_hierarchy(self.container):
+                    raise utils.WrongDesctinationError(
+                        'cannot insert object into this folder!')
+
         super(MediaLibrary, self).save(*args, **kwargs)
+
+    def higher_in_hierarchy(self, container):
+        """
+        Recursively walks down, gathering folders in lower part of hierarchy,
+        and then checks if `container` is among them.
+        """
+        def recurse(folder):
+            try:
+                children = list(folder.__class__.objects.filter(container=folder, is_file=False))
+            except ValidationError:
+                # Validation only makes sense if folder is not being created.
+                return
+
+            if len(children) == 0:
+                return
+            else:
+                lower_hierarchy.extend(list(children))
+                for child in children:
+                    recurse(child)
+
+        lower_hierarchy = []
+        recurse(self)
+        return container in lower_hierarchy
+
+    @classmethod
+    def pre_delete(cls, sender, document, **kwargs):
+        if document.mediafile is not None:
+            document.mediafile.delete()
 
 
 class Voice(EmbeddedDocument):
@@ -434,6 +476,12 @@ def control_permissions(sender, **kwargs):
 from mongoengine import signals
 
 signals.pre_save.connect(Section.pre_save, sender=Section)
+
 signals.pre_save.connect(Piece.pre_save, sender=Piece)
+
 signals.pre_save.connect(ManuscriptContent.pre_save, sender=ManuscriptContent)
+
 signals.pre_save.connect(Manuscript.pre_save, sender=Manuscript)
+
+signals.pre_save.connect(MediaLibrary.pre_save, sender=MediaLibrary)
+signals.pre_delete.connect(MediaLibrary.pre_delete, sender=MediaLibrary)

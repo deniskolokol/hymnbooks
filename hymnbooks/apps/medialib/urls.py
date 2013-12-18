@@ -26,4 +26,9 @@ urlpatterns = patterns('',
     # Create new folder inside a current container.
     url(r'^(?P<container>[-\w]+)/newfolder/$', views.NewFolderView.as_view(),
         name='medialib_newfolder_in_container'),
+
+    # Media library: Content of a given folder.
+    url(r'^(?P<id>[-\w]+)/delete/$', views.MediaLibraryDelete.as_view(),
+        name='medialib_delete'),
+
 )
