@@ -149,7 +149,6 @@ class MediaLibraryDelete(View):
 
     def get(self, request, **kwargs):
         media_item = models.MediaLibrary.objects.get(id=kwargs['id'])
-        print media_item
 
         rev_kwargs = {}
         if media_item.container:
