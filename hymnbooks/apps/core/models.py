@@ -442,7 +442,6 @@ class ManuscriptContent(GenericDocument, EmbeddedDocument):
     """
     Actual Manuscript content (scan parts and description).
     """
-    page_index = StringField(help_text=_(u'Page index'))
     page_description = StringField(help_text=_(u'Description'))
     media = ListField(ReferenceField(MediaLibrary))
 
