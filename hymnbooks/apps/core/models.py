@@ -490,5 +490,4 @@ def control_permissions(sender, **kwargs):
             pass # Do nothing.
 
 
-# signals.pre_save.connect(MediaLibrary.pre_save, sender=MediaLibrary)
 signals.pre_delete.connect(MediaLibrary.pre_delete, sender=MediaLibrary)

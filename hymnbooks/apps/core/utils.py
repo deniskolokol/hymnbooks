@@ -144,6 +144,22 @@ def id_generator(size=6, chars=string.ascii_lowercase+string.digits):
     return ''.join(random.choice(chars) for x in range(size))
 
 
+def sizify(value):
+    """
+    File size pretty printing.
+    """
+    if value < 512000:
+        value /= 1024.0
+        ext = 'KB'
+    elif value < 4194304000:
+        value /= 1048576.0
+        ext = 'MB'
+    else:
+        value /= 1073741824.0
+        ext = 'GB'
+    return '%s %s' % (str(round(value, 2)), ext)
+
+
 """
 Custom procedure for unique slug depending on the document type.
 See slugify_unique

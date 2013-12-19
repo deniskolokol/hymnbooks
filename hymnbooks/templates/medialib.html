@@ -19,7 +19,6 @@
           {% with context_objects.all|first as first_object %}
           <thead>
             <tr>
-              <th>&nbsp;</th>
               <th>{% trans 'Filename' %}</th>
               <th>{% trans 'Created' %}</th>
               <th>{% trans 'By' %}</th>
@@ -33,16 +32,16 @@
             {% for object in context_objects %}
             <tr>
               <td>
-                <a href="/cms/lib/{{ object.id }}">
+                <a href="/cms/lib/{{ object.id }}/">
                 {% if object.is_file %}
                 <img src="http://icons.iconarchive.com/icons/treetog/junior/24/document-photo-icon.png" />
                 {{ object.image.thumbnail }}
                 {% else %}
                 <img src="http://icons.iconarchive.com/icons/treetog/junior/24/folder-close-icon.png" />
-                </a>
                 {% endif %} 
+                {{ object.name }}
+              </a>
               </td>
-              <td> <a href="/cms/lib/{{ object.id }}">{{ object.name }}</a> </td>
               <td> {{ object.created|date:"j E Y" }} </td>
               <td> {{ object.created_by }} </td>
               <td> {{ object.mediafile.content_type }} </td>

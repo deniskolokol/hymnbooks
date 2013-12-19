@@ -1,5 +1,4 @@
 from hymnbooks.apps.api.resources import *
-
 from django.conf.urls import *
 from tastypie.api import Api
 
@@ -14,6 +13,16 @@ v1_api.register(PermissionResource())
 v1_api.register(DocumentTypeResource())
 v1_api.register(MediaLibraryResource())
 
+from django.core.urlresolvers import reverse
+from django.views.generic import RedirectView
+
 urlpatterns = patterns('',
-   (r'^', include(v1_api.urls)),
+    (r'^', include(v1_api.urls)),
+)
+
+from hymnbooks.apps.medialib.views import MediaLibraryView
+urlpatterns += patterns('',
+    url(r'^v1/media_file/(?P<container>\w+)/$',
+        MediaLibraryView.as_view(),
+        name='medialib_container_api'),
 )

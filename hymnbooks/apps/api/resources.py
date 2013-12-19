@@ -6,8 +6,9 @@ from tastypie_mongoengine.fields import *
 
 from hymnbooks.settings.base import API_NAME
 from hymnbooks.apps.core import models, utils
-from hymnbooks.apps.api.auth import AppApiKeyAuthentication, CookieBasicAuthentication, \
-     AnyoneCanViewAuthorization, StaffAuthorization, AppAuthorization
+from hymnbooks.apps.api.auth import AppApiKeyAuthentication, \
+     CookieBasicAuthentication, AnyoneCanViewAuthorization, \
+     StaffAuthorization, AppAuthorization
 
 
 DATE_FILTERS = ('exact', 'lt', 'lte', 'gte', 'gt', 'ne')
@@ -286,7 +287,8 @@ class EndUserDataResource(MongoEngineResource):
                 related = obj_related.get_related_resource(self)                
 
                 bundle.data.update(
-                    self.reference_to_resource(field, bundle.data[field],
+                    self.reference_to_resource(field,
+                                               bundle.data[field],
                                                related.get_resource_uri()))
         return bundle
 
@@ -358,6 +360,12 @@ class MediaLibraryResource(EndUserDataResource):
     def dehydrate(self, bundle):
         args = ('container',)
         bundle = super(MediaLibraryResource, self).dehydrate(bundle, *args)
+
+        if bundle.data['is_file']:
+            bundle.data.update({
+                'size': bundle.obj.mediafile.length,
+                'size_pretty': utils.sizify(bundle.obj.mediafile.length),
+                'content_type': bundle.obj.mediafile.content_type})
 
         return bundle
 
