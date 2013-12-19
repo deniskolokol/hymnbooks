@@ -122,3 +122,4 @@ LOGGING = {
 
 # Api related
 API_NAME = 'v1'
+MEDIA_POST_REDIRECTS_TO_API = True

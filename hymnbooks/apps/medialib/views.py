@@ -9,6 +9,7 @@ from django.utils.translation import ugettext as _
 from hymnbooks.apps.core.models import MediaLibrary
 from hymnbooks.apps.core.utils import UserMessage
 from hymnbooks.apps.medialib import forms
+from hymnbooks.settings import base
 
 import mongoengine
 
