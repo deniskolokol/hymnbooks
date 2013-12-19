@@ -17,16 +17,16 @@ import mongoengine
 
 def get_media_object(**kwargs):
     try:
-        container = MediaLibrary.objects.get(pk=kwargs['container'])
+        obj = MediaLibrary.objects.get(pk=kwargs['container'])
     except:
-        container = None
-    return container
+        obj = None
+    return obj
 
 
 def get_MediaLibrary(request, *args, **kwargs):
     """
-    Filter items from medialibrary depending on status,
-    container folder, etc.
+    Returns a QuerySet in case if kwargs['container'] points to None or folder,
+    otherwise - MediaLibrary object.
     """
     lib_filter = {}
 
