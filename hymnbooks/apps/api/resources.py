@@ -296,6 +296,7 @@ class EndUserDataResource(MongoEngineResource):
         """
         Fill `created_by` on POST.
         """
+        print bundle.request
         if bundle.request.method == 'POST':
             bundle.data['created_by'] = bundle.request.user
         return bundle
@@ -394,7 +395,7 @@ class PieceResource(MongoEngineResource):
 
     class Meta:
         object_class = models.Piece
-        allowed_methods = ('get', 'post')
+        allowed_methods = ('get', 'post', 'patch', 'delete')
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
         # authorization = AnyoneCanViewAuthorization()

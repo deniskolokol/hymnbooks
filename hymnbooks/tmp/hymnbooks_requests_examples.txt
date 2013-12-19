@@ -49,7 +49,7 @@ curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"title
 
 # DELETE
 
-curl --dump-header - -H "Content-Type: application/json" -X DELETE http://dev.hymnbooks:8000/api/v1/manuscript/524f47dd02c8f10a26674d1c/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+curl --dump-header - -H "Content-Type: application/json" -X DELETE http://dev.hymnbooks/api/v1/manuscript/52ad859e02c8f106bd56fc23/?username=su\&api_key=b924d14ff71d27509a25f0d779ec45db8315812d
 
 # PATCH
 
