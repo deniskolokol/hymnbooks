@@ -242,12 +242,11 @@ class FieldDefinitionResource(MongoEngineResource):
     class Meta:
         object_class = models.FieldDefinition
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
-        # TEST ONLY! Switch back after solving the authentication problem!
-        authentication = Authentication()
-        authorization = Authorization()
-        # authentication = MultiAuthentication(AppApiKeyAuthentication(),
-        #                                      CookieBasicAuthentication())
+        authentication = MultiAuthentication(AppApiKeyAuthentication(),
+                                             CookieBasicAuthentication())
         # authorization = AppAuthorization()
+        # TEST ONLY! Switch back after solving the authentication problem!
+        authorization = Authorization()
 
     def hydrate(self, bundle):
         bundle.data = ensure_slug(bundle.data, 'field_name', 'help_text')
@@ -265,14 +264,11 @@ class EndUserDataResource(MongoEngineResource):
                                 full=True, null=True)
 
     class Meta:
-        # TEST ONLY! Switch back after solving the authentication problem!
-        authentication = Authentication()
-        authorization = Authorization()
-        # authentication = MultiAuthentication(AppApiKeyAuthentication(),
-        #                                      CookieBasicAuthentication())
+        authentication = MultiAuthentication(AppApiKeyAuthentication(),
+                                             CookieBasicAuthentication())
         # authorization = AppAuthorization()
-
-
+        # TEST ONLY! Switch back after solving the authentication problem!
+        authorization = Authorization()
         
     def reference_to_resource(self, field, data=None, resource_uri=''):
         key = field + '_resource_uri'
@@ -322,12 +318,11 @@ class SectionResource(EndUserDataResource):
             }
         ordering = ('name', 'help_text', 'status', 'created', 'updated',)
         always_return_data = True
-        # TEST ONLY! Switch back after solving the authentication problem!
-        authentication = Authentication()
-        authorization = Authorization()
-        # authentication = MultiAuthentication(AppApiKeyAuthentication(),
-        #                                      CookieBasicAuthentication())
+        authentication = MultiAuthentication(AppApiKeyAuthentication(),
+                                             CookieBasicAuthentication())
         # authorization = AppAuthorization()
+        # TEST ONLY! Switch back after solving the authentication problem!
+        authorization = Authorization()
 
     def hydrate(self, bundle):
         bundle = super(SectionResource, self).hydrate(bundle)
@@ -358,12 +353,11 @@ class MediaLibraryResource(EndUserDataResource):
             }
         ordering = ('is_file', 'name', 'container', 'status', 'created', 'updated',)
         always_return_data = True
-        # TEST ONLY! Switch back after solving the authentication problem!
-        authentication = Authentication()
-        authorization = Authorization()
-        # authentication = MultiAuthentication(AppApiKeyAuthentication(),
-        #                                      CookieBasicAuthentication())
+        authentication = MultiAuthentication(AppApiKeyAuthentication(),
+                                             CookieBasicAuthentication())
         # authorization = AnyoneCanViewAuthorization()
+        # TEST ONLY! Switch back after solving the authentication problem!
+        authorization = Authorization()
 
     def dehydrate(self, bundle):
         args = ('container',)
@@ -387,12 +381,11 @@ class ManuscriptContentResource(MongoEngineResource):
         resource_name = 'manuscript_content'
         object_class = models.ManuscriptContent
         allowed_methods = ('get', 'post', 'patch', 'delete')
-        # TEST ONLY! Switch back after solving the authentication problem!
-        authentication = Authentication()
-        authorization = Authorization()
-        # authentication = MultiAuthentication(AppApiKeyAuthentication(),
-        #                                      CookieBasicAuthentication())
+        authentication = MultiAuthentication(AppApiKeyAuthentication(),
+                                             CookieBasicAuthentication())
         # authorization = AnyoneCanViewAuthorization()
+        # TEST ONLY! Switch back after solving the authentication problem!
+        authorization = Authorization()
 
 class PieceResource(MongoEngineResource):
     media = ReferencedListField(attribute='media',
@@ -402,12 +395,11 @@ class PieceResource(MongoEngineResource):
     class Meta:
         object_class = models.Piece
         allowed_methods = ('get', 'post')
-        # TEST ONLY! Switch back after solving the authentication problem!
-        authentication = Authentication()
-        authorization = Authorization()
-        # authentication = MultiAuthentication(AppApiKeyAuthentication(),
-        #                                      CookieBasicAuthentication())
+        authentication = MultiAuthentication(AppApiKeyAuthentication(),
+                                             CookieBasicAuthentication())
         # authorization = AnyoneCanViewAuthorization()
+        # TEST ONLY! Switch back after solving the authentication problem!
+        authorization = Authorization()
 
         
 class ManuscriptResource(EndUserDataResource):
@@ -435,12 +427,11 @@ class ManuscriptResource(EndUserDataResource):
         excludes = ('id',)
         ordering = ('name', 'title', 'status', 'created', 'updated',)
         always_return_data = True
-        # TEST ONLY! Switch back after solving the authentication problem!
-        authentication = Authentication()
-        authorization = Authorization()
-        # authentication = MultiAuthentication(AppApiKeyAuthentication(),
-        #                                      CookieBasicAuthentication())
+        authentication = MultiAuthentication(AppApiKeyAuthentication(),
+                                             CookieBasicAuthentication())
         # authorization = AnyoneCanViewAuthorization()
+        # TEST ONLY! Switch back after solving the authentication problem!
+        authorization = Authorization()
 
     def hydrate(self, bundle):
         """
