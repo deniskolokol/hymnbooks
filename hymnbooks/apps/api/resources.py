@@ -448,6 +448,12 @@ class ManuscriptResource(EndUserDataResource):
         """
         bundle = super(ManuscriptResource, self).hydrate(bundle)
 
+        try: # Simple control.
+            name = bundle.data['name']
+        except KeyError:
+            bundle.data['name'] = None
+
         if (bundle.data['name'] is None) or (bundle.data['name'].strip() == ''):
             bundle.data['name'] = utils.id_generator(size=20)
+
         return bundle

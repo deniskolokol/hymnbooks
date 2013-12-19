@@ -9,7 +9,7 @@ from django.utils.translation import ugettext as _
 from hymnbooks.apps.core.models import MediaLibrary
 from hymnbooks.apps.core.utils import UserMessage
 from hymnbooks.apps.medialib import forms
-from hymnbooks.settings import base
+from hymnbooks import settings
 
 import mongoengine
 
@@ -99,6 +99,9 @@ class FileUploadView(View):
             container = get_media_object(**kwargs)
             request.session['user_message'] = self.handle_upload(
                 form.cleaned_data['file'], container, request)
+
+            # if settings.base.MEDIA_POST_REDIRECTS_TO_API
+            
             return reverse_back(**kwargs)
 
         return render(request,
