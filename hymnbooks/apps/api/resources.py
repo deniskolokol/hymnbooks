@@ -296,8 +296,12 @@ class EndUserDataResource(MongoEngineResource):
         """
         Fill `created_by` on POST.
         """
-        if bundle.request.method == 'POST':
-            bundle.data['created_by'] = bundle.request.user
+        bundle.data['updated_by'] = bundle.request.user
+
+        if bundle.obj:
+            if bundle.obj.created_by is None:
+                bundle.data['created_by'] = bundle.request.user
+
         return bundle
 
 
@@ -372,36 +376,28 @@ class MediaLibraryResource(EndUserDataResource):
         return bundle
 
 
-class ManuscriptContentResource(MongoEngineResource):
-    media = ReferencedListField(attribute='media',
-                                of='hymnbooks.apps.api.resources.MediaLibraryResource',
-                                full=True, null=True)
-
-    class Meta:
-        resource_name = 'manuscript_content'
-        object_class = models.ManuscriptContent
-        allowed_methods = ('get', 'post', 'patch', 'delete')
-        authentication = MultiAuthentication(AppApiKeyAuthentication(),
-                                             CookieBasicAuthentication())
-        # authorization = AnyoneCanViewAuthorization()
-        # TEST ONLY! Switch back after solving the authentication problem!
-        authorization = Authorization()
-
 class PieceResource(MongoEngineResource):
     media = ReferencedListField(attribute='media',
                                 of='hymnbooks.apps.api.resources.MediaLibraryResource',
                                 full=True, null=True)
-
     class Meta:
         object_class = models.Piece
-        allowed_methods = ('get', 'post', 'patch', 'delete')
-        authentication = MultiAuthentication(AppApiKeyAuthentication(),
-                                             CookieBasicAuthentication())
-        # authorization = AnyoneCanViewAuthorization()
-        # TEST ONLY! Switch back after solving the authentication problem!
-        authorization = Authorization()
+        # allowed_methods = ('get', 'post', 'patch', 'delete')
+        # authentication = MultiAuthentication(AppApiKeyAuthentication(),
+        #                                      CookieBasicAuthentication())
+        # # authorization = AnyoneCanViewAuthorization()
+        # # TEST ONLY! Switch back after solving the authentication problem!
+        # authorization = Authorization()
 
         
+class ManuscriptContentResource(MongoEngineResource):
+    media = ReferencedListField(attribute='media',
+                                of='hymnbooks.apps.api.resources.MediaLibraryResource',
+                                full=True, null=True)
+    class Meta:
+        object_class = models.ManuscriptContent
+
+
 class ManuscriptResource(EndUserDataResource):
     """
     Manuscript data.
@@ -415,7 +411,6 @@ class ManuscriptResource(EndUserDataResource):
     media = ReferencedListField(attribute='media',
                                 of='hymnbooks.apps.api.resources.MediaLibraryResource',
                                 full=True, null=True)
-
     class Meta:
         object_class = models.Manuscript
         allowed_methods = ('get', 'post', 'patch', 'delete')

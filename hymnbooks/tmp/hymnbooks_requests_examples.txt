@@ -45,19 +45,48 @@ curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"defa
 
 # POST
 
-curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"title": "Kancjonał Niebieski"}' http://dev.hymnbooks/api/v1/manuscript/?username=su\&api_key=b924d14ff71d27509a25f0d779ec45db8315812d
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"title": "Lorenz system", "name": "lorenz-system", "description": "The Lorenz system is a system of ordinary differential equations (the Lorenz equations) first studied by Edward Lorenz. It is notable for having chaotic solutions for certain parameter values and initial conditions. In particular, the Lorenz attractor is a set of chaotic solutions of the Lorenz system which, when plotted, resemble a butterfly or figure eight."}' http://dev.hymnbooks/api/v1/manuscript/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
 
 # DELETE
 
 curl --dump-header - -H "Content-Type: application/json" -X DELETE http://dev.hymnbooks/api/v1/manuscript/52ad859e02c8f106bd56fc23/?username=su\&api_key=b924d14ff71d27509a25f0d779ec45db8315812d
 
+# manuscript content
 # POST - adding content
 
-curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"title": "okładka", "page_description": "okładka", "page_index": "0k"}' http://dev.hymnbooks/api/v1/manuscript/524f48d902c8f10a424aeee1/content/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"name": "1-k", "page_description": "strona jeden"}' http://dev.hymnbooks/api/v1/manuscript/52b3430e02c8f1096d6a00d2/content/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
 
-# POST into Manuscript.media
+# PATCH
 
-curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"resource_uri": "/api/v1/media_library/52b2282902c8f10cc3843b2b/"}' http://dev.hymnbooks/api/v1/manuscript/52388c7a02c8f105db98925a/media/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"name": "0-k", "page_description": "okładka zero"}' http://dev.hymnbooks/api/v1/manuscript/52b3430e02c8f1096d6a00d2/content/0/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
+
+# PATCH - adding media
+# doesn't work :(
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"media": ["/api/v1/media_library/52b2282902c8f10cc3843b2b/"]}' http://dev.hymnbooks/api/v1/manuscript/52b3430e02c8f1096d6a00d2/content/1/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
+
+# DELETE
+
+curl --dump-header - -H "Content-Type: application/json" -X DELETE http://dev.hymnbooks/api/v1/manuscript/52b3430e02c8f1096d6a00d2/content/1/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
+
+# manuscript pieces
+# POST - adding piece
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"name": "Oj na gori", "author": ["Radomiła Patryk"], "incipit": "oj na na na, piritu pitu tu"}' http://dev.hymnbooks/api/v1/manuscript/52b3430e02c8f1096d6a00d2/pieces/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
+
+# PATCH - adding media to a piece
+# doesn't work :(
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"media": ["/api/v1/media_library/52b2282902c8f10cc3843b2b/"]}' http://dev.hymnbooks/api/v1/manuscript/52b3430e02c8f1096d6a00d2/pieces/0/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
+
+
+# Manuscript.media
+# PATCH
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"status": "draft", "media": ["/api/v1/media_library/52b2282902c8f10cc3843b2b/"]}' http://dev.hymnbooks/api/v1/manuscript/52b3430e02c8f1096d6a00d2/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
+
+# PATCH - add Manuscript.media without deleting existing
+???
 
 
 

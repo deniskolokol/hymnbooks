@@ -399,7 +399,29 @@ class MediaLibrary(GenericDocument):
         _collect_lower_level_containers(document)
 
         return container in lower_level_containers
-            
+
+
+class EmbeddedGenericDocument(EmbeddedDocument):
+    """
+    Abstract class for all vocabulary-like embedded documents.
+    """
+    name = StringField(required=True, help_text=_(u'Name'))
+    sections = ListField(EmbeddedDocumentField(SectionData),
+                         help_text=_(u'Sections'))
+
+    meta = {'abstract': True}
+
+    def save(self, *args, **kwargs):
+        """
+        Dummy save method to avoid 500 on POST or PATCH.
+        """
+        # Is it somehow possible to set `updated` and `updated_by`
+        # in the master document from here?
+        pass
+
+    def __unicode__(self):
+        return self.name
+
 
 class Voice(EmbeddedDocument):
     """
@@ -410,7 +432,7 @@ class Voice(EmbeddedDocument):
     description = StringField()
 
 
-class Piece(GenericDocument, EmbeddedDocument):
+class Piece(EmbeddedGenericDocument):
     """
     Musical piece.
     """
@@ -419,7 +441,7 @@ class Piece(GenericDocument, EmbeddedDocument):
     incipit = StringField(help_text=_(u'Incipit'))
     scores_mxml = StringField(help_text=_(u'Original MusicXML'))
     scores_dict = DictField(help_text=_(u'Scores dictionary')) # converted from XML for indexing and searching by notes
-    media = ListField(ReferenceField(MediaLibrary))
+    media = ListField(ReferenceField('MediaLibrary'))
 
     def save(self, *args, **kwargs):
         """
@@ -438,15 +460,12 @@ class Piece(GenericDocument, EmbeddedDocument):
         super(Piece, self).save(*args, **kwargs)
 
 
-class ManuscriptContent(GenericDocument, EmbeddedDocument):
+class ManuscriptContent(EmbeddedGenericDocument):
     """
     Actual Manuscript content (scan parts and description).
     """
     page_description = StringField(help_text=_(u'Description'))
-    media = ListField(ReferenceField(MediaLibrary))
-
-    def clean(self):
-        utils.FieldValidator().validate(self, ('page_index',))
+    media = ListField(ReferenceField('MediaLibrary'))
 
 
 class Manuscript(GenericDocument):
