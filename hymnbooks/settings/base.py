@@ -120,5 +120,5 @@ LOGGING = {
     }
 }
 
-# Api name
+# Api related
 API_NAME = 'v1'

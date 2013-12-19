@@ -316,6 +316,7 @@ class SectionResource(EndUserDataResource):
             'created': DATE_FILTERS,
             'last_updated': DATE_FILTERS,
             }
+        ordering = ('name', 'help_text', 'status', 'created', 'updated',)
         always_return_data = True
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
@@ -346,10 +347,11 @@ class MediaLibraryResource(EndUserDataResource):
             'updated_by': ALL,
             'status': ('exact', 'ne'),
             'created': DATE_FILTERS,
-            'last_updated': DATE_FILTERS,
+            'updated': DATE_FILTERS,
             'container': ALL,
             'is_file': ALL
             }
+        ordering = ('is_file', 'name', 'container', 'status', 'created', 'updated',)
         always_return_data = True
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
@@ -420,6 +422,7 @@ class ManuscriptResource(EndUserDataResource):
             'last_updated': DATE_FILTERS,
             }
         excludes = ('id',)
+        ordering = ('name', 'title', 'status', 'created', 'updated',)
         always_return_data = True
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
