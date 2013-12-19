@@ -57,6 +57,10 @@ def reverse_back(**kwargs):
                                 args=(kwargs['container'],)))
     return redirect(reverse('medialib_root'))
 
+def redirect_url_api(obj):
+    return '/api/%s/media_library/%s/?format=json' % \
+      (settings.base.API_NAME, obj.id)
+
 
 class MediaLibraryView(View):
     template_name = 'medialib.html'
@@ -97,11 +101,16 @@ class FileUploadView(View):
         form = self.form_class(request.POST, request.FILES)
         if form.is_valid():
             container = get_media_object(**kwargs)
-            request.session['user_message'] = self.handle_upload(
+            message, object_created = self.handle_upload(
                 form.cleaned_data['file'], container, request)
 
-            # if settings.base.MEDIA_POST_REDIRECTS_TO_API
-            
+            if object_created:
+                # Re-direct to API may be required.
+                if settings.base.MEDIA_POST_REDIRECTS_TO_API:
+                    return redirect(redirect_url_api(object_created))
+
+            # Redirect back to app.
+            request.session['user_message'] = message
             return reverse_back(**kwargs)
 
         return render(request,
@@ -125,9 +134,9 @@ class FileUploadView(View):
             mediafile.save(request=request)
         except mongoengine.errors.NotUniqueError:
             message = _('File with this name already exists!')
-            return UserMessage(message).danger()
+            return UserMessage(message).danger(), None
 
-        return # no news, good news
+        return None, mediafile
 
 
 class NewFolderView(View):
@@ -148,8 +157,15 @@ class NewFolderView(View):
         form = self.form_class(request.POST)
         if form.is_valid():
             container = get_media_object(**kwargs)
-            request.session['user_message'] = self.create_folder(
+            message, object_created = self.create_folder(
                 form.cleaned_data['name'], container, request)
+
+            if object_created:
+                # Re-direct to API may be required.
+                if settings.base.MEDIA_POST_REDIRECTS_TO_API:
+                    return redirect(redirect_url_api(object_created))
+
+            request.session['user_message'] = message
             return reverse_back(**kwargs)
 
         return render(request,
@@ -171,9 +187,9 @@ class NewFolderView(View):
             folder.save(request=request)
         except mongoengine.errors.NotUniqueError:
             message = _('Folder with this name already exists!')
-            return UserMessage(message).danger()
+            return UserMessage(message).danger(), None
 
-        return # no news, good news
+        return None, folder
 
 
 class MediaLibraryDelete(View):
