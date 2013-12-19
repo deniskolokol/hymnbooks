@@ -51,14 +51,13 @@ curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"title
 
 curl --dump-header - -H "Content-Type: application/json" -X DELETE http://dev.hymnbooks/api/v1/manuscript/52ad859e02c8f106bd56fc23/?username=su\&api_key=b924d14ff71d27509a25f0d779ec45db8315812d
 
-# PATCH
-
-curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"description": "ala ma kota, biedna sierota"}' http://dev.hymnbooks:8000/api/v1/manuscript/524f48d902c8f10a424aeee1/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
-
 # POST - adding content
 
 curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"title": "okładka", "page_description": "okładka", "page_index": "0k"}' http://dev.hymnbooks/api/v1/manuscript/524f48d902c8f10a424aeee1/content/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
 
+# POST into Manuscript.media
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"resource_uri": "/api/v1/media_library/52b2282902c8f10cc3843b2b/"}' http://dev.hymnbooks/api/v1/manuscript/52388c7a02c8f105db98925a/media/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
 
 
 

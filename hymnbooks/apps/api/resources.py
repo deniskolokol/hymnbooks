@@ -296,7 +296,6 @@ class EndUserDataResource(MongoEngineResource):
         """
         Fill `created_by` on POST.
         """
-        print bundle.request
         if bundle.request.method == 'POST':
             bundle.data['created_by'] = bundle.request.user
         return bundle
@@ -413,9 +412,9 @@ class ManuscriptResource(EndUserDataResource):
     pieces = EmbeddedListField(attribute='pieces',
                                of='hymnbooks.apps.api.resources.PieceResource',
                                full=True, null=True)
-    media = EmbeddedListField(attribute='media',
-                              of='hymnbooks.apps.api.resources.MediaLibraryResource',
-                              full=True, null=True)
+    media = ReferencedListField(attribute='media',
+                                of='hymnbooks.apps.api.resources.MediaLibraryResource',
+                                full=True, null=True)
 
     class Meta:
         object_class = models.Manuscript
