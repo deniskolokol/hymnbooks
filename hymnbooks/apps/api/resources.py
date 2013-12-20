@@ -401,26 +401,34 @@ class ManuscriptContentResource(MongoEngineResource):
         # TO-DO:
         # - get resource_uri from MediaLibraryResource
         # - create super class for content and piece, move there dehydrate and hydrate
-        media = []
-        for media_file in bundle.data['media']:
-            media.append({'resource_uri': '/api/v1/media_library/%s/' % media_file.id})
+        # - optimize code:
+        # -- don't create a list, update references while iterating
+        # -- enclose it in list comprehension
+
         try:
-            bundle.data['media'] = media
+            media = bundle.data['media']
         except:
-            pass
+            media = None
+
+        if media:
+            bundle.data['media'] = []
+            for media_file in media:
+                bundle.data['media'].append(
+                    {'resource_uri': '/api/v1/media_library/%s/' % media_file.id})
+
         return bundle
 
     def hydrate(self, bundle):
         # TO-DO:
         # - get id from the object obtained via MediaLibraryResource through provided resource_uri
-        print bundle.data
-        media = []
-        for media_file in bundle.data['media']:
-            media.append(media_file.rsplit('/', 2)[-2])
         try:
-            bundle.data['media'] = media
+            media = bundle.data['media']
         except:
-            pass
+            media = None
+
+        if media:
+            bundle.data['media'] = [m.rsplit('/', 2)[-2] for m in media]
+
         return bundle
 
 
