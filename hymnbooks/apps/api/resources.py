@@ -376,60 +376,65 @@ class MediaLibraryResource(EndUserDataResource):
         return bundle
 
 
-class PieceResource(MongoEngineResource):
-    media = ReferencedListField(attribute='media',
-                                of='hymnbooks.apps.api.resources.MediaLibraryResource',
-                                full=True, null=True)
+class MediaReferenceResource(MongoEngineResource):
+    """
+    Manage Media references: convert to and fro `id` and `resource_uri`.
+    For subclassing only.
+    """
+    def dehydrate(self, bundle):
+        """
+        Fill media for display: convert id to resource_uri.
+        """
+        try:
+            media = bundle.data['media']
+        except KeyError:
+            return bundle
+
+        media_resource_uri = MediaLibraryResource().get_resource_uri()
+        bundle.data['media'] = [            
+            {'resource_uri': '%s%s/' % (media_resource_uri, m.id)}
+            for m in media]
+
+        return bundle
+
+    def hydrate(self, bundle):
+        """
+        Fill media for post or patch: get if from resource_uri.
+        """
+        try:
+            media = bundle.data['media']
+        except:
+            return bundle
+
+        bundle.data['media'] = [
+            MediaLibraryResource().get_via_uri(m, request=bundle.request).id
+            for m in media]
+
+        return bundle
+
+
+class PieceResource(MediaReferenceResource):
     class Meta:
         object_class = models.Piece
-
-        
-class ManuscriptContentResource(MongoEngineResource):
-    # media = ReferencedListField(attribute='media',
-    #                             of='hymnbooks.apps.api.resources.MediaLibraryResource',
-    #                             full=True, null=True)
-    class Meta:
-        object_class = models.ManuscriptContent
         allowed_methods = ('get', 'post', 'patch', 'delete')
+        always_return_data = True
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
         # authorization = AnyoneCanViewAuthorization()
         # TEST ONLY! Switch back after solving the authentication problem!
         authorization = Authorization()
 
-    def dehydrate(self, bundle):
-        # TO-DO:
-        # - get resource_uri from MediaLibraryResource
-        # - create super class for content and piece, move there dehydrate and hydrate
-        # - optimize code:
-        # -- don't create a list, update references while iterating
-        # -- enclose it in list comprehension
-
-        try:
-            media = bundle.data['media']
-        except:
-            media = None
-
-        if media:
-            bundle.data['media'] = []
-            for media_file in media:
-                bundle.data['media'].append(
-                    {'resource_uri': '/api/v1/media_library/%s/' % media_file.id})
-
-        return bundle
-
-    def hydrate(self, bundle):
-        # TO-DO:
-        # - get id from the object obtained via MediaLibraryResource through provided resource_uri
-        try:
-            media = bundle.data['media']
-        except:
-            media = None
-
-        if media:
-            bundle.data['media'] = [m.rsplit('/', 2)[-2] for m in media]
-
-        return bundle
+        
+class ManuscriptContentResource(MediaReferenceResource):
+    class Meta:
+        object_class = models.ManuscriptContent
+        allowed_methods = ('get', 'post', 'patch', 'delete')
+        always_return_data = True
+        authentication = MultiAuthentication(AppApiKeyAuthentication(),
+                                             CookieBasicAuthentication())
+        # authorization = AnyoneCanViewAuthorization()
+        # TEST ONLY! Switch back after solving the authentication problem!
+        authorization = Authorization()
 
 
 class ManuscriptResource(EndUserDataResource):

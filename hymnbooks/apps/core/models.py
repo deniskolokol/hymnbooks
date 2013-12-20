@@ -416,10 +416,8 @@ class EmbeddedGenericDocument(EmbeddedDocument):
         """
         Dummy save method to avoid 500 on POST or PATCH.
         """
-        # Is it somehow possible to set `updated` and `updated_by`
-        # in the master document from here?
-        print args, kwargs
-        for ii in dir(self.media): print ii
+        # TO-DO: set `updated` and `updated_by` in the master document:
+        # simply call .save() of the master object (how to .get it?)
         pass
 
     def __unicode__(self):
