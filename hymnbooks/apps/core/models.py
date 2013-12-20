@@ -408,6 +408,7 @@ class EmbeddedGenericDocument(EmbeddedDocument):
     name = StringField(required=True, help_text=_(u'Name'))
     sections = ListField(EmbeddedDocumentField(SectionData),
                          help_text=_(u'Sections'))
+    media = ListField(ReferenceField(MediaLibrary))
 
     meta = {'abstract': True}
 
@@ -417,6 +418,8 @@ class EmbeddedGenericDocument(EmbeddedDocument):
         """
         # Is it somehow possible to set `updated` and `updated_by`
         # in the master document from here?
+        print args, kwargs
+        for ii in dir(self.media): print ii
         pass
 
     def __unicode__(self):
@@ -441,7 +444,6 @@ class Piece(EmbeddedGenericDocument):
     incipit = StringField(help_text=_(u'Incipit'))
     scores_mxml = StringField(help_text=_(u'Original MusicXML'))
     scores_dict = DictField(help_text=_(u'Scores dictionary')) # converted from XML for indexing and searching by notes
-    media = ListField(ReferenceField('MediaLibrary'))
 
     def save(self, *args, **kwargs):
         """
@@ -465,7 +467,6 @@ class ManuscriptContent(EmbeddedGenericDocument):
     Actual Manuscript content (scan parts and description).
     """
     page_description = StringField(help_text=_(u'Description'))
-    media = ListField(ReferenceField('MediaLibrary'))
 
 
 class Manuscript(GenericDocument):

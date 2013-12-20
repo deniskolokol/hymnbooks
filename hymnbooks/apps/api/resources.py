@@ -382,20 +382,46 @@ class PieceResource(MongoEngineResource):
                                 full=True, null=True)
     class Meta:
         object_class = models.Piece
-        # allowed_methods = ('get', 'post', 'patch', 'delete')
-        # authentication = MultiAuthentication(AppApiKeyAuthentication(),
-        #                                      CookieBasicAuthentication())
-        # # authorization = AnyoneCanViewAuthorization()
-        # # TEST ONLY! Switch back after solving the authentication problem!
-        # authorization = Authorization()
 
         
 class ManuscriptContentResource(MongoEngineResource):
-    media = ReferencedListField(attribute='media',
-                                of='hymnbooks.apps.api.resources.MediaLibraryResource',
-                                full=True, null=True)
+    # media = ReferencedListField(attribute='media',
+    #                             of='hymnbooks.apps.api.resources.MediaLibraryResource',
+    #                             full=True, null=True)
     class Meta:
         object_class = models.ManuscriptContent
+        allowed_methods = ('get', 'post', 'patch', 'delete')
+        authentication = MultiAuthentication(AppApiKeyAuthentication(),
+                                             CookieBasicAuthentication())
+        # authorization = AnyoneCanViewAuthorization()
+        # TEST ONLY! Switch back after solving the authentication problem!
+        authorization = Authorization()
+
+    def dehydrate(self, bundle):
+        # TO-DO:
+        # - get resource_uri from MediaLibraryResource
+        # - create super class for content and piece, move there dehydrate and hydrate
+        media = []
+        for media_file in bundle.data['media']:
+            media.append({'resource_uri': '/api/v1/media_library/%s/' % media_file.id})
+        try:
+            bundle.data['media'] = media
+        except:
+            pass
+        return bundle
+
+    def hydrate(self, bundle):
+        # TO-DO:
+        # - get id from the object obtained via MediaLibraryResource through provided resource_uri
+        print bundle.data
+        media = []
+        for media_file in bundle.data['media']:
+            media.append(media_file.rsplit('/', 2)[-2])
+        try:
+            bundle.data['media'] = media
+        except:
+            pass
+        return bundle
 
 
 class ManuscriptResource(EndUserDataResource):
