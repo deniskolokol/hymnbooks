@@ -439,7 +439,7 @@ class Piece(EmbeddedGenericDocument):
     """
     author = ListField(StringField(), required=True, help_text=_(u'Author(s)'))
     voices = ListField(EmbeddedDocumentField(Voice), help_text=_(u'Voices'))
-    incipit = StringField(help_text=_(u'Incipit'))
+    incipit = ListField(StringField(), help_text=_(u'Incipit'))
     scores_mxml = StringField(help_text=_(u'Original MusicXML'))
     scores_dict = DictField(help_text=_(u'Scores dictionary')) # converted from XML for indexing and searching by notes
 
