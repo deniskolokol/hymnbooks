@@ -43,18 +43,28 @@ def ensure_slug(data, field, field_fro, obj_class=None):
     Autofill slug-like field.
     Slugify unique, if obj_class (reference to appropriate model class).
     """
-    if field not in data:
-        data[field] = None
-    if (data[field] is None) or (data[field].strip() == ''):
-        try:
-            data[field] = utils.slugify_unique(data[field_fro],
-                                               obj_class,
-                                               slugfield=field)
-        except AttributeError:
-            # Either `obj_class` not specified or it doesn't have `.objects`.
-            data[field] = utils.slugify_downcode(data[field_fro])
-        except:  # In all other cases (e.g. KeyError) leave data as is:
-            pass # Resource will throw appropriate exception.
+    try:
+        value = data[field].strip() if data[field].strip() != '' else None
+    except:
+        value = None
+
+    if value: # It is all right.
+        return data
+    
+    try:
+        data[field] = utils.slugify_unique(data[field_fro],
+                                           obj_class,
+                                           slugfield=field)
+    except AttributeError: # `obj_class` not specified.
+        data[field] = utils.slugify_downcode(data[field_fro])
+
+    except: # Nothing have worked.
+        data[field] = ''
+
+    # Empty string is not an error, but cannot be accepted as a slug!
+    if data[field].strip() == '':
+        data[field] = utils.id_generator(size=20)
+
     return data
 
     
@@ -279,6 +289,10 @@ class EndUserDataResource(MongoEngineResource):
                 (resource_uri, str(data.obj.id))}
         
     def dehydrate(self, bundle, *args):
+        """
+        Use readable form of 'created_by' and 'updated_by' objects for display,
+        add `resource_uri` for referensing to the actual objects.
+        """
         if bundle.request.method == 'GET':
             fields = list(set(['created_by', 'updated_by'] + list(args)))
 
@@ -294,7 +308,7 @@ class EndUserDataResource(MongoEngineResource):
 
     def hydrate(self, bundle):
         """
-        Fill `created_by` on POST.
+        Fill 'updated_by' and 'created_by' on POST.
         """
         bundle.data['updated_by'] = bundle.request.user
 
@@ -469,16 +483,13 @@ class ManuscriptResource(EndUserDataResource):
 
     def hydrate(self, bundle):
         """
-        Fill `name` with random string, if empty.
+        If `name` is empty, fill it with unique slug obtained from title.
+        If title is not given, use a random alphanumeric value.
         """
         bundle = super(ManuscriptResource, self).hydrate(bundle)
 
-        try: # Simple control.
-            name = bundle.data['name']
-        except KeyError:
-            bundle.data['name'] = None
-
-        if (bundle.data['name'] is None) or (bundle.data['name'].strip() == ''):
-            bundle.data['name'] = utils.id_generator(size=20)
-
+        bundle.data = ensure_slug(bundle.data,
+                                  field='name',
+                                  field_fro='title',
+                                  obj_class=models.Manuscript)
         return bundle

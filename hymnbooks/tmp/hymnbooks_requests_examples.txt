@@ -74,7 +74,6 @@ curl --dump-header - -H "Content-Type: application/json" -X DELETE http://dev.hy
 curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"name": "Oj na gori", "author": ["Radomiła Patryk"], "incipit": "oj na na na, piritu pitu tu"}' http://dev.hymnbooks/api/v1/manuscript/52b3430e02c8f1096d6a00d2/pieces/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
 
 # PATCH - adding media to a piece
-# doesn't work :(
 
 curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"media": ["/api/v1/media_library/52b2282902c8f10cc3843b2b/"]}' http://dev.hymnbooks/api/v1/manuscript/52b3430e02c8f1096d6a00d2/pieces/0/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
 

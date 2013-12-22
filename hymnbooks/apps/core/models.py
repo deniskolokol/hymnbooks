@@ -420,6 +420,10 @@ class EmbeddedGenericDocument(EmbeddedDocument):
         # simply call .save() of the master object (how to .get it?)
         pass
 
+    def ensure_reference(self, media_ref):
+        if media_ref not in self.media:
+            self.media.append(media_ref)
+
     def __unicode__(self):
         return self.name
 
@@ -443,22 +447,57 @@ class Piece(EmbeddedGenericDocument):
     scores_mxml = StringField(help_text=_(u'Original MusicXML'))
     scores_dict = DictField(help_text=_(u'Scores dictionary')) # converted from XML for indexing and searching by notes
 
-    def save(self, *args, **kwargs):
+    def convert_mxml_to_dict(self, media_item):
         """
-        Converts MusicXML to dictionary for indexing.
+        Converts MusicXML media item to dict for search. Appends the item to
+        self.media if it is not referenced for the current Piece.
         """
         import xmltodict
 
-        if (self.scores_dict is None) or (self.scores_dict == ''):
-            try:
-                self.scores_dict = xmltodict.parse(self.scores_mxml,
-                                                   process_namespaces=True)
-            except:
-                # WARNING! This should raise a warning, not the error!
-                pass
+        mxml = media_item.mediafile.read()
+        try:
+            self.scores_dict = xmltodict.parse(mxml, process_namespaces=True)
+        except Exception as e:
+            message = 'Cannot extract XML from library file %s!\nThe error os %s' %\
+              (media_item.mediafile.name, e)
+            return UserMessage(message).danger()
 
-        super(Piece, self).save(*args, **kwargs)
+        return
 
+    def fill_scores_dict(self, media_ref=None, ensure_reference=True):
+        """
+        Converts MusicXML to dictionary from item of MediaLibrary.
+
+        If media_ref is given, simply overrides self.scores_dict. Otherwise
+        tries to fill it automatically looking for XML in media.
+
+        If ensure_reference is True, ensures that it is referenced
+        in self.media. Ignored if media_ref is None.
+        """
+        
+        if media_ref:
+            danger = self.convert_mxml_to_dict(media_ref)
+
+            if not danger:
+                if ensure_reference:
+                    self.ensure_reference(media_ref)
+
+            return danger
+
+        # No media_ref provided, try to find xml in media.
+        xml_items = [f for f in self.media if f.mediafile.content_type == 'text/xml']
+        try:
+            media_item = xml_items[0]
+        except IndexError:
+            return UserMessage('Could not find XML in media files!').danger()
+        except Exception as e:
+            return UserMessage('Error: %s' % e).danger()
+
+        danger = self.convert_mxml_to_dict(media_item)
+        if not danger:
+            self.save()
+
+        return danger
 
 class ManuscriptContent(EmbeddedGenericDocument):
     """
@@ -480,6 +519,17 @@ class Manuscript(GenericDocument):
 
     def clean(self):
         utils.FieldValidator().validate(self, ('content',))
+
+    def save(self, force_insert=False, validate=True, 
+             clean=True, write_concern=None, cascade=None, 
+             cascade_kwargs=None, _refs=None, **kwargs):
+
+        # Try to convert scores.
+        for piece in self.pieces:
+            piece.fill_scores_dict()                
+
+        super(Manuscript, self).save(force_insert, validate, clean,
+            write_concern, cascade, cascade_kwargs, _refs, **kwargs)
 
 
 # SIGNALS
