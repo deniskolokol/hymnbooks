@@ -303,7 +303,10 @@ class FieldDefinitionResource(MongoEngineResource):
     def hydrate(self, bundle):
         bundle.data = ensure_slug(bundle.data, 'field_name', 'help_text')
         if 'embedded_section' in bundle.data:
-            bundle.data['field_type'] = 'embeddeddocument'
+            # It can be there, but can be null or empty.
+            if not ((bundle.data['embedded_section'] is None) or
+                    (len(bundle.data['embedded_section']) == 0)):
+                bundle.data['field_type'] = 'embeddeddocument'
         return bundle
 
 
