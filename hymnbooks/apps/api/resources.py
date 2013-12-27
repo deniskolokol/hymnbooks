@@ -252,11 +252,6 @@ class EndUserDataResource(MongoEngineResource):
                                 to='hymnbooks.apps.api.resources.UserResource',
                                 full=True, null=True)
 
-    class Meta:
-        authorization = AppAuthorization()
-        authentication = MultiAuthentication(AppApiKeyAuthentication(),
-                                             CookieBasicAuthentication())
-        
     def reference_to_resource(self, field, data=None, resource_uri=''):
         key = field + '_resource_uri'
         if data is None:
@@ -303,6 +298,7 @@ class FieldDefinitionResource(MongoEngineResource):
     class Meta:
         object_class = models.FieldDefinition
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
+        always_return_data = True
 
     def hydrate(self, bundle):
         bundle.data = ensure_slug(bundle.data, 'field_name', 'help_text')
