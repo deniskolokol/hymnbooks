@@ -2,7 +2,7 @@ from django.utils.translation import ugettext as _
 
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.authentication import Authentication, MultiAuthentication
-from tastypie.authorization import ReadOnlyAuthorization
+from tastypie.authorization import Authorization, ReadOnlyAuthorization
 from tastypie_mongoengine.resources import MongoEngineResource
 from tastypie_mongoengine.fields import *
 
@@ -243,23 +243,6 @@ class UserResource(MongoEngineResource):
 
         return orm_filters
 
-class FieldDefinitionResource(MongoEngineResource):
-    embedded_section = ReferenceField(attribute='embedded_section',
-                                      to='hymnbooks.apps.api.resources.SectionResource',
-                                      full=True, null=True)
-    class Meta:
-        object_class = models.FieldDefinition
-        allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
-        authorization = AppAuthorization()
-        authentication = MultiAuthentication(AppApiKeyAuthentication(),
-                                             CookieBasicAuthentication())
-
-    def hydrate(self, bundle):
-        bundle.data = ensure_slug(bundle.data, 'field_name', 'help_text')
-        if 'embedded_section' in bundle.data:
-            bundle.data['field_type'] = 'embeddeddocument'
-        return bundle
-
     
 class EndUserDataResource(MongoEngineResource):
     created_by = ReferenceField(attribute='created_by',
@@ -313,6 +296,21 @@ class EndUserDataResource(MongoEngineResource):
         return bundle
 
 
+class FieldDefinitionResource(MongoEngineResource):
+    embedded_section = ReferenceField(attribute='embedded_section',
+                                      to='hymnbooks.apps.api.resources.SectionResource',
+                                      full=True, null=True)
+    class Meta:
+        object_class = models.FieldDefinition
+        allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
+
+    def hydrate(self, bundle):
+        bundle.data = ensure_slug(bundle.data, 'field_name', 'help_text')
+        if 'embedded_section' in bundle.data:
+            bundle.data['field_type'] = 'embeddeddocument'
+        return bundle
+
+
 class SectionResource(EndUserDataResource):
     fields = EmbeddedListField(attribute='fields',
                                of='hymnbooks.apps.api.resources.FieldDefinitionResource',
@@ -330,7 +328,9 @@ class SectionResource(EndUserDataResource):
             }
         ordering = ('name', 'help_text', 'status', 'created', 'updated',)
         always_return_data = True
-        authorization = AppAuthorization()
+        # TEST ONLY!
+        # authorization = AppAuthorization()
+        authorization = Authorization()
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
 
