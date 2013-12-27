@@ -385,29 +385,6 @@ class EmbeddedMediaReferenceResource(MongoEngineResource):
     Manage Media references: convert to and fro `id` and `resource_uri`.
     For subclassing only.
     """
-
-    def dispatch(self, request_type, request, **kwargs):
-        # print "\n---\nrequest_type: %s\nresource: %s\nclass: %s\nauthentication: %s\nauthorization: %s\nuser: %s\nis_authenticated: %s" % \
-        #   (bundle.request.method.lower(), self._meta.resource_name, self.__class__, self._meta.authentication, self._meta.authorization,
-        #    bundle.request.user, bundle.request.user.is_authenticated(),)
-
-        # result = super(MongoEngineResource, self).dispatch(request_type, request, **kwargs)
-
-        # method_map = {'put': 'update',
-        #               'patch': 'update',
-        #               'post': 'create',
-        #               'get': 'read',
-        #               'delete': 'delete'}        
-        # authorize = getattr(self._meta.authorization,
-        #                     '_'.join([method_map[request.method.lower()], request_type]))
-        # if not authorize([], bundle):
-        #     from django.http import HttpResponse
-        #     return HttpResponse(status='401')
-
-        # return result
-
-        super(MongoEngineResource, self).dispatch(request_type, request, **kwargs)    
-
     def dehydrate(self, bundle):
         """
         Fill media for display: convert id to resource_uri.
