@@ -49,9 +49,8 @@ DOCUMENT_TYPE = (('MongoGroup', _('Group')),
                  ('MongoUser', _('User')),
                  ('MongoUserProfile', _('User profile')),
                  ('Section', _('Data section')),
-                 ('LibraryItem', _('Library item')),
-                 ('Manuscript', _('Manuscript')),
-                 ('ManuscriptContent', _('Manuscript content')))
+                 ('MediaLibrary', _('Media library')),
+                 ('Manuscript', _('Manuscript')),)
 
 
 class GlobalPermission(EmbeddedDocument):

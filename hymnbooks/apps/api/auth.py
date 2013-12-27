@@ -161,16 +161,16 @@ class StaffAuthorization(Authorization):
         except AttributeError:
             raise Unauthorized(_('You have to authenticate first!'))
 
-    def update_detail(self, object_list, bundle):
-        try:
-            return bundle.request.user.is_superuser or bundle.request.user.is_staff
-        except AttributeError:
-            raise Unauthorized(_('You have to authenticate first!'))
-
     def update_list(self, object_list, bundle):
         try:
             if bundle.request.user.is_superuser or bundle.request.user.is_staff:
                 return object_list
+        except AttributeError:
+            raise Unauthorized(_('You have to authenticate first!'))
+
+    def update_detail(self, object_list, bundle):
+        try:
+            return bundle.request.user.is_superuser or bundle.request.user.is_staff
         except AttributeError:
             raise Unauthorized(_('You have to authenticate first!'))
 
