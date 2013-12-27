@@ -33,12 +33,12 @@ Permission types that fit API requirements.
 """
 PERMISSION_TYPE = (('create_detail', _('Create detail')),
                    ('create_list', _('Create list')),
-                   ('read_list', _('Read list')),
                    ('read_detail', _('Read detail')),
-                   ('update_list', _('Update list')),
+                   ('read_list', _('Read list')),
                    ('update_detail', _('Update detail')),
-                   ('delete_list', _('Delete list')),
-                   ('delete_detail', _('Delete detail')))
+                   ('update_list', _('Update list')),
+                   ('delete_detail', _('Delete detail')),
+                   ('delete_list', _('Delete list')), )
 
 """
 Document Types that should be defined on Permissions (analog of 
@@ -50,7 +50,8 @@ DOCUMENT_TYPE = (('MongoGroup', _('Group')),
                  ('MongoUserProfile', _('User profile')),
                  ('Section', _('Data section')),
                  ('LibraryItem', _('Library item')),
-                 ('Manuscript', _('Manuscript')))
+                 ('Manuscript', _('Manuscript')),
+                 ('ManuscriptContent', _('Manuscript content')))
 
 
 class GlobalPermission(EmbeddedDocument):
@@ -444,8 +445,7 @@ class Piece(EmbeddedGenericDocument):
     author = ListField(StringField(), required=True, help_text=_(u'Author(s)'))
     voices = ListField(EmbeddedDocumentField(Voice), help_text=_(u'Voices'))
     incipit = ListField(StringField(), help_text=_(u'Incipit'))
-    scores_mxml = StringField(help_text=_(u'Original MusicXML'))
-    scores_dict = DictField(help_text=_(u'Scores dictionary')) # converted from XML for indexing and searching by notes
+    scores_dict = DictField(help_text=_(u'Scores dictionary'))
 
     def convert_mxml_to_dict(self, media_item):
         """

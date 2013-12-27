@@ -1,6 +1,8 @@
+from django.utils.translation import ugettext as _
+
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.authentication import Authentication, MultiAuthentication
-from tastypie.authorization import Authorization, ReadOnlyAuthorization
+from tastypie.authorization import ReadOnlyAuthorization
 from tastypie_mongoengine.resources import MongoEngineResource
 from tastypie_mongoengine.fields import *
 
@@ -13,6 +15,8 @@ from hymnbooks.apps.api.auth import AppApiKeyAuthentication, \
 
 DATE_FILTERS = ('exact', 'lt', 'lte', 'gte', 'gt', 'ne')
 
+
+# HELPER FUNCTIONS
 
 def remove_duplicates(data):
     return dict((k, list(set(v))) if isinstance(v, list) else (k, v)
@@ -67,7 +71,9 @@ def ensure_slug(data, field, field_fro, obj_class=None):
 
     return data
 
-    
+
+# RESOURCES
+
 class BaseChoiceList(object):
     """
     Container class for list choice list. Id and name only.
@@ -160,12 +166,9 @@ class DocumentPermissionResource(MongoEngineResource):
     class Meta:
         object_class = models.GlobalPermission
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
+        authorization = StaffAuthorization()
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
-        # TEST ONLY! Switch back after solving the authentication problem!
-        # authorization = StaffAuthorization()
-        authorization = Authorization()
-
 
 class GroupResource(MongoEngineResource):
     permissions = EmbeddedListField(attribute='permissions',
@@ -178,9 +181,7 @@ class GroupResource(MongoEngineResource):
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete',)
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
-        # TEST ONLY! Switch back after solving the authentication problem!
-        # authorization = StaffAuthorization()
-        authorization = Authorization()
+        authorization = StaffAuthorization()
 
     def obj_get(self, bundle, **kwargs):
         bundle = super(GroupResource, self).obj_get(bundle, **kwargs)
@@ -194,7 +195,6 @@ class UserResource(MongoEngineResource):
     permissions = EmbeddedListField(attribute='permissions',
                                     of='hymnbooks.apps.api.resources.DocumentPermissionResource',
                                     full=True, null=True)
-
     class Meta:
         resource_name = 'admin_user'
         object_class = models.MongoUser
@@ -205,11 +205,9 @@ class UserResource(MongoEngineResource):
             'is_active': ('exact', 'ne'),
             'date_joined': DATE_FILTERS
             }
+        authorization = StaffAuthorization()
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
-        # TEST ONLY! Switch back after solving the authentication problem!
-        # authorization = StaffAuthorization()
-        authorization = Authorization()
 
     def hydrate(self, bundle):
         action_params = dict((k, v) for k, v in bundle.data.iteritems()
@@ -252,11 +250,9 @@ class FieldDefinitionResource(MongoEngineResource):
     class Meta:
         object_class = models.FieldDefinition
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
+        authorization = AppAuthorization()
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
-        # authorization = AppAuthorization()
-        # TEST ONLY! Switch back after solving the authentication problem!
-        authorization = Authorization()
 
     def hydrate(self, bundle):
         bundle.data = ensure_slug(bundle.data, 'field_name', 'help_text')
@@ -274,11 +270,9 @@ class EndUserDataResource(MongoEngineResource):
                                 full=True, null=True)
 
     class Meta:
+        authorization = AppAuthorization()
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
-        # authorization = AppAuthorization()
-        # TEST ONLY! Switch back after solving the authentication problem!
-        authorization = Authorization()
         
     def reference_to_resource(self, field, data=None, resource_uri=''):
         key = field + '_resource_uri'
@@ -336,11 +330,9 @@ class SectionResource(EndUserDataResource):
             }
         ordering = ('name', 'help_text', 'status', 'created', 'updated',)
         always_return_data = True
+        authorization = AppAuthorization()
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
-        # authorization = AppAuthorization()
-        # TEST ONLY! Switch back after solving the authentication problem!
-        authorization = Authorization()
 
     def hydrate(self, bundle):
         bundle = super(SectionResource, self).hydrate(bundle)
@@ -371,11 +363,9 @@ class MediaLibraryResource(EndUserDataResource):
             }
         ordering = ('is_file', 'name', 'container', 'status', 'created', 'updated',)
         always_return_data = True
+        authorization = AnyoneCanViewAuthorization()
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
-        # authorization = AnyoneCanViewAuthorization()
-        # TEST ONLY! Switch back after solving the authentication problem!
-        authorization = Authorization()
 
     def dehydrate(self, bundle):
         args = ('container',)
@@ -390,11 +380,34 @@ class MediaLibraryResource(EndUserDataResource):
         return bundle
 
 
-class MediaReferenceResource(MongoEngineResource):
+class EmbeddedMediaReferenceResource(MongoEngineResource):
     """
     Manage Media references: convert to and fro `id` and `resource_uri`.
     For subclassing only.
     """
+
+    def dispatch(self, request_type, request, **kwargs):
+        # print "\n---\nrequest_type: %s\nresource: %s\nclass: %s\nauthentication: %s\nauthorization: %s\nuser: %s\nis_authenticated: %s" % \
+        #   (bundle.request.method.lower(), self._meta.resource_name, self.__class__, self._meta.authentication, self._meta.authorization,
+        #    bundle.request.user, bundle.request.user.is_authenticated(),)
+
+        # result = super(MongoEngineResource, self).dispatch(request_type, request, **kwargs)
+
+        # method_map = {'put': 'update',
+        #               'patch': 'update',
+        #               'post': 'create',
+        #               'get': 'read',
+        #               'delete': 'delete'}        
+        # authorize = getattr(self._meta.authorization,
+        #                     '_'.join([method_map[request.method.lower()], request_type]))
+        # if not authorize([], bundle):
+        #     from django.http import HttpResponse
+        #     return HttpResponse(status='401')
+
+        # return result
+
+        super(MongoEngineResource, self).dispatch(request_type, request, **kwargs)    
+
     def dehydrate(self, bundle):
         """
         Fill media for display: convert id to resource_uri.
@@ -405,7 +418,7 @@ class MediaReferenceResource(MongoEngineResource):
             return bundle
 
         media_resource_uri = MediaLibraryResource().get_resource_uri()
-        bundle.data['media'] = [            
+        bundle.data['media'] = [
             {'resource_uri': '%s%s/' % (media_resource_uri, m.id)}
             for m in media]
 
@@ -427,29 +440,27 @@ class MediaReferenceResource(MongoEngineResource):
         return bundle
 
 
-class PieceResource(MediaReferenceResource):
+class PieceResource(EmbeddedMediaReferenceResource):
+    """
+    Pieces data (list of documents, embedded into Manuscript).
+    """
     class Meta:
         object_class = models.Piece
-        allowed_methods = ('get', 'post', 'patch', 'delete')
         always_return_data = True
+        authorization = AnyoneCanViewAuthorization()
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
-        # authorization = AnyoneCanViewAuthorization()
-        # TEST ONLY! Switch back after solving the authentication problem!
-        authorization = Authorization()
-
         
-class ManuscriptContentResource(MediaReferenceResource):
+class ManuscriptContentResource(EmbeddedMediaReferenceResource):
+    """
+    Manuscript content data (list of documents, embedded into Manuscript).
+    """
     class Meta:
         object_class = models.ManuscriptContent
-        allowed_methods = ('get', 'post', 'patch', 'delete')
         always_return_data = True
+        authorization = AnyoneCanViewAuthorization()
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
-        # authorization = AnyoneCanViewAuthorization()
-        # TEST ONLY! Switch back after solving the authentication problem!
-        authorization = Authorization()
-
 
 class ManuscriptResource(EndUserDataResource):
     """
@@ -475,11 +486,9 @@ class ManuscriptResource(EndUserDataResource):
         excludes = ('id',)
         ordering = ('name', 'title', 'status', 'created', 'updated',)
         always_return_data = True
+        authorization = AnyoneCanViewAuthorization()
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
-        # authorization = AnyoneCanViewAuthorization()
-        # TEST ONLY! Switch back after solving the authentication problem!
-        authorization = Authorization()
 
     def hydrate(self, bundle):
         """

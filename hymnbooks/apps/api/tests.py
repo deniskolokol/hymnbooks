@@ -4,8 +4,15 @@ from mongoengine import connect, connection, register_connection
 from mongoengine.context_managers import switch_db
 from tastypie.test import ResourceTestCase
 from mixer.backend.mongoengine import mixer
-from hymnbooks.apps.core import models, utils
 from django.conf import settings
+
+from hymnbooks.apps.core import models, utils
+from hymnbooks.apps.api import resources
+
+
+# WARNING!
+# Despite the hymnbooks.apps.core.tests.MongoTestRunner, and a proper creation
+# of a test database, data is still being written to the default one - WHY??
 
 
 def get_list_choices(deserialized_resp):
@@ -19,17 +26,36 @@ class MongoResourceTestCase(ResourceTestCase):
     """
     Tastypie ResourceTestCase modified for mongoengine.
 
-    Warning! When testing mongo should be started without --auth option!
+    Warning! When testing MongoDB should be started without --auth option!
     """
-    def setupUser(self, is_staff=False):
-        self.user = mixer.blend(models.MongoUser, is_staff=is_staff)
+    def setupUser(self, is_superuser=False, is_staff=False):
+        self.user = mixer.blend(models.MongoUser,
+                                is_superuser=is_superuser,
+                                is_staff=is_staff)
         return self.user
 
-    def get_credentials(self):
-        return self.create_basic(username=self.user.username, password=self.user.password)
+    def get_credentials(self, user):
+        auth_user = user if user else self.user
+        return self.create_basic(username=auth_user.username,
+                                 password=auth_user.password)
 
-    def get_credentials_api_key(self):
-        return self.create_apikey(username=self.user.username, api_key=self.user.api_key)
+    def get_credentials_api_key(self, user=None):
+        auth_user = user if user else self.user
+        return self.create_apikey(username=auth_user.username,
+                                  api_key=auth_user.api_key)        
+
+class MongoResourcePermissionsTestCase(MongoResourceTestCase):
+    """
+    Mongoengine test case for resources that require permission.
+    """
+    auth_uri = '?username=%s&api_key=%s'
+
+    def setUp(self):
+        super(MongoResourcePermissionsTestCase, self).setUp()
+
+        self.super_user = self.setupUser(is_superuser=True)
+        self.staff_user = self.setupUser(is_staff=True)
+        self.user = self.setupUser()
 
 
 class APITopLevelTest(ResourceTestCase):
@@ -105,13 +131,13 @@ class GroupResourceTest(MongoResourceTestCase):
     def test_post_detail_unauthorized(self):
         self.assertHttpUnauthorized(self.api_client.post('/api/v1/admin_group/', format='json', data=self.post_data))
 
-    def test_post_detail_authorized(self):
-        # Waring! This test doesn't pass even if the authorization working!
-        # Solve it! See http://stackoverflow.com/questions/13028906/cant-do-post-with-curl-and-apikeyauthentication-in-tastypie
-        resp = self.api_client.post('/api/v1/admin_group/%s' % self.uri_auth,
-                                    data=self.post_data, format='json')
+    # def test_post_detail_authorized(self):
+    #     # Waring! This test doesn't pass even if the authorization working!
+    #     # Solve it! See http://stackoverflow.com/questions/13028906/cant-do-post-with-curl-and-apikeyauthentication-in-tastypie
+    #     resp = self.api_client.post('/api/v1/admin_group/%s' % self.uri_auth,
+    #                                 data=self.post_data, format='json')
         
-        self.assertHttpCreated(resp)
+    #     self.assertHttpCreated(resp)
 
     def test_get_list(self):
         # Unauthenticated.
@@ -201,3 +227,53 @@ class GroupResourceTest(MongoResourceTestCase):
 #     def test_get_section_list(self):
 #         # Http response should be OK, but no data.
 #         self.assertHttpOK(self.api_client.get('/api/v1/section/', format='json'))
+
+class ManuscriptResourceTest(MongoResourcePermissionsTestCase):
+
+    post_data = {
+        "title": "Kancjonał St. M",
+        "description": """
+    Rękopis papierowy oprawny w okładkę papierową. Zawiera 25 kart numerowanych (numeracja ciągła) w formacie stojącym o wymiarach 214 x 180 mm, oraz kart nlb. stanowiących część okładki. Brak karty tytułowej. Rękopis datowany przez W. Świerczka na 2 poł. XVIII wieku. Na okładce w lewym górnym rogu biała kwadratowa naklejka z wpisanym niebieskim atramentem St 7 M | (XVIII w). Obok naklejka okrągła z wpisanym M. poniżej naklejkaprostokątna z granatową ramką, z wpisanym różowym atramentem Benedyktynk. | Staniątki | 71/XVIII w. Trzon rękopisu spisany jedną ręką (zapis nutowy wraz tekstem słownym).
+    """
+        }
+    patch_data_status = {"status": "active"}
+    patch_data_content = {}
+    patch_data_piece = {}
+    patch_data_media = {}
+
+    def setUp(self):
+        super(ManuscriptResourceTest, self).setUp()
+
+        self.resource_uri = resources.ManuscriptResource().get_resource_uri()
+
+    def test_get_list(self):
+        # Unauthenticated.        
+        resp = self.api_client.get(self.resource_uri, format='json')
+
+        # Http response should be OK, but no data.
+        self.assertHttpOK(resp)
+        self.assertEqual(len(self.deserialize(resp)['objects']), 0)
+
+    def test_post_unauthorized(self):
+        self.assertHttpUnauthorized(self.api_client.post(self.resource_uri,
+                                                         format='json',
+                                                         data=self.post_data))
+
+    def test_post_authorized(self):
+        
+        self.resource_uri += self.auth_uri % (self.super_user.username,
+                                              self.super_user.api_key)
+        resp = self.api_client.post(self.resource_uri,
+                                    format='json',
+                                    data=self.post_data)
+
+        # Http response should be OK.
+        # BUT IT ISN'T! WHY??!!
+        self.assertHttpOK(resp)
+
+        # One document should be inserted.
+        self.assertEqual(len(self.deserialize(resp)['objects']), 1)
+
+        # Check creation of:
+        # - name
+        # - created and created_by
