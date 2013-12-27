@@ -199,7 +199,7 @@ class UserResource(MongoEngineResource):
         resource_name = 'admin_user'
         object_class = models.MongoUser
         allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
-        excludes = ('id', 'password',)
+        excludes = ('id', 'password', 'api_key', 'api_key_created')
         filtering = {
             'username': ALL, # Filters are tuned to handle Authentication in the URL.
             'is_active': ('exact', 'ne'),

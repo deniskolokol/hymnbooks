@@ -38,7 +38,7 @@ PERMISSION_TYPE = (('create_detail', _('Create detail')),
                    ('update_detail', _('Update detail')),
                    ('update_list', _('Update list')),
                    ('delete_detail', _('Delete detail')),
-                   ('delete_list', _('Delete list')), )
+                   ('delete_list', _('Delete list')),)
 
 """
 Document Types that should be defined on Permissions (analog of 
