@@ -92,6 +92,18 @@ curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"stat
 # PATCH - add Manuscript.media without deleting existing
 ???
 
+# manuscript content
+# POST - adding content
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"name": "1-k", "page_description": "strona jeden"}' http://dev.hymnbooks/api/v1/manuscript/52b3430e02c8f1096d6a00d2/content/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
+
+# manuscript section data
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"sections": [{"section": "/api/v1/section/52aecb5302c8f106d10e383c/", "data": {"evidence": "Besy", "pole": "Mrako"}}]}' http://dev.hymnbooks/api/v1/manuscript/52bdaa4002c8f105e19f6df1/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
+
+# manuscript content section data
+
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"sections": [{"section": "/api/v1/section/52aecb5302c8f106d10e383c/", "data": {"evidence": "Besy", "pole": "Mrako"}}]}' http://dev.hymnbooks/api/v1/manuscript/52bdaa4002c8f105e19f6df1/content/0/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
 
 
 

@@ -341,6 +341,17 @@ class SectionResource(EndUserDataResource):
         return bundle
 
 
+class SectionDataResource(MongoEngineResource):
+    section = ReferenceField(attribute='section',
+                             to='hymnbooks.apps.api.resources.SectionResource',
+                             null=True, full=True)
+    class Meta:
+        object_class = models.SectionData
+        resource_name = 'section_data'
+        allowed_methods = ('get', 'post', 'put', 'patch', 'delete')
+        always_return_data = True
+
+
 class MediaLibraryResource(EndUserDataResource):
     container = ReferenceField(attribute='container',
                                to='hymnbooks.apps.api.resources.MediaLibraryResource',
@@ -384,6 +395,10 @@ class EmbeddedMediaReferenceResource(MongoEngineResource):
     Manage Media references: convert to and fro `id` and `resource_uri`.
     For subclassing only.
     """
+    sections = EmbeddedListField(attribute='sections',
+                                 of='hymnbooks.apps.api.resources.SectionDataResource',
+                                 full=True, null=True)
+
     def dehydrate(self, bundle):
         """
         Fill media for display: convert id to resource_uri.
@@ -410,7 +425,8 @@ class EmbeddedMediaReferenceResource(MongoEngineResource):
             return bundle
 
         bundle.data['media'] = [
-            MediaLibraryResource().get_via_uri(m, request=bundle.request).id
+            MediaLibraryResource().get_via_uri(m['resource_uri'],
+                                               request=bundle.request).id
             for m in media]
 
         return bundle
@@ -448,6 +464,9 @@ class ManuscriptResource(EndUserDataResource):
     pieces = EmbeddedListField(attribute='pieces',
                                of='hymnbooks.apps.api.resources.PieceResource',
                                full=True, null=True)
+    sections = EmbeddedListField(attribute='sections',
+                                 of='hymnbooks.apps.api.resources.SectionDataResource',
+                                 full=True, null=True)
     media = ReferencedListField(attribute='media',
                                 of='hymnbooks.apps.api.resources.MediaLibraryResource',
                                 full=True, null=True)

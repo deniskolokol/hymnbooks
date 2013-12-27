@@ -306,7 +306,7 @@ class SectionData(EmbeddedDocument):
     Any additional data for any document that has `sections` attr.
     The schema is described in `section` attr.
     """
-    data = ListField(DictField(), required=True, help_text=_(u'Data'))
+    data = DictField(help_text=_(u'Data'))
     section = ReferenceField(Section, required=True,
                              help_text=_(u'Description'))
 
@@ -441,7 +441,7 @@ class Piece(EmbeddedGenericDocument):
     """
     Musical piece.
     """
-    author = ListField(StringField(), required=True, help_text=_(u'Author(s)'))
+    author = ListField(StringField(), help_text=_(u'Author(s)'))
     voices = ListField(EmbeddedDocumentField(Voice), help_text=_(u'Voices'))
     incipit = ListField(StringField(), help_text=_(u'Incipit'))
     scores_dict = DictField(help_text=_(u'Scores dictionary'))
