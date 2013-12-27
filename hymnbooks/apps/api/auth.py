@@ -18,8 +18,33 @@ signals.post_save.connect(create_api_key, sender=MongoUser)
 signals.post_save.connect(control_permissions, sender=MongoUser)
 signals.post_save.connect(control_permissions, sender=MongoGroup)
 
-# TEST
-import inspect
+
+# Helper functions.
+def get_created_by(obj):
+    """
+    Returns creator of resource object, or creator of its parent object
+    (which resource object is embedded into).
+    """
+    try:
+        created_by = obj.created_by
+    except AttributeError:
+        created_by = obj.parent.created_by
+
+    return created_by
+
+
+def get_document_type(obj):
+    """
+    Returns document_type of resource object, or document_type of its parent
+    object (which resource object is embedded into).
+    """
+    from hymnbooks.apps.core.models import DOCUMENT_TYPE
+
+    document_type = obj._class_name
+    if document_type not in [k[0] for k in DOCUMENT_TYPE]:
+        document_type = obj.parent._class_name
+
+    return document_type
 
 
 class AppApiKeyAuthentication(ApiKeyAuthentication):
@@ -62,14 +87,12 @@ class AppApiKeyAuthentication(ApiKeyAuthentication):
         request.user = user
 
         return True
-    
+
     def is_authenticated(self, request, **kwargs):
         """
         Custom solution for `is_authenticated` function: MongoUsers has got
         authenticated through custom api_key check.
         """
-        # print inspect.stack()[1][4], inspect.stack()[0][3]
-
         try:
             is_authenticated = self.super_self.is_authenticated(
                 request, **kwargs)
@@ -110,7 +133,7 @@ class StaffAuthorization(Authorization):
     Class for staff authorization.
     """
     def read_list(self, object_list, bundle):
-        # This assumes a ``QuerySet`` from ``ModelResource``.
+        # This assumes a QuerySet from ModelResource.
         try:
             if bundle.request.user.is_superuser or bundle.request.user.is_staff:
                 return object_list.all()
@@ -153,7 +176,7 @@ class StaffAuthorization(Authorization):
 
     def delete_list(self, object_list, bundle):
         """
-        Only superuser can delete lists!
+        Superuser and staff can delete lists and details.
         """
         try:
             if bundle.request.user.is_superuser or bundle.request.user.is_staff:
@@ -163,8 +186,7 @@ class StaffAuthorization(Authorization):
 
     def delete_detail(self, object_list, bundle):
         """
-        If user has permissions to delete detail, it can only 
-        delete those ctreated by him.
+        Superuser and staff can delete lists and details.
         """
         try:
             return bundle.request.user.is_superuser or bundle.request.user.is_staff
@@ -180,16 +202,15 @@ class AppAuthorization(Authorization):
 
     * In other cases, even if User has permissions on a particular
       document_type, he can only update and delete his documents.
-    """    
+    """
     def read_list(self, object_list, bundle):
         # This assumes a ``QuerySet`` from ``ModelResource``.
         user = bundle.request.user
-        document_type = object_list._document._class_name
+        document_type = get_document_type(bundle.obj)
         try:
-            if user.is_superuser or user.is_staff:
-                return object_list.all()
-            elif user.has_permission('read_list', document_type):
-                return object_list.filter(created_by__exact=user)
+            if user.is_superuser or user.is_staff or user.has_permission(
+                    'read_list', document_type):
+                return object_list
             else:
                 return []
         except AttributeError:
@@ -198,24 +219,30 @@ class AppAuthorization(Authorization):
     def read_detail(self, object_list, bundle):
         return bundle.request.user.is_superuser or \
           bundle.request.user.has_permission('read_detail',
-                                             bundle.obj._class_name)
+                                             get_document_type(bundle.obj))
 
     def create_detail(self, object_list, bundle):
         try:
             return bundle.request.user.is_superuser \
               or bundle.request.user.has_permission('create_detail',
-                                                    bundle.obj._class_name)
+                                                    get_document_type(bundle.obj))
         except AttributeError:
             raise Unauthorized(_('You have to authenticate first!'))
 
     def create_list(self, object_list, bundle):
-        return object_list
+        try:
+            if bundle.request.user.is_superuser \
+              or bundle.request.user.has_permission('create_list',
+                                                    get_document_type(bundle.obj)):
+                return object_list
+        except AttributeError:
+            raise Unauthorized(_('You have to authenticate first!'))
 
     def update_detail(self, object_list, bundle):
         return bundle.request.user.is_superuser or \
           (bundle.request.user.has_permission('update_detail',
-                                              bundle.obj._class_name)
-              and bundle.obj.created_by == bundle.request.user)
+                                              get_document_type(bundle.obj))
+           and bundle.request.user == get_created_by(bundle.obj))
 
     def update_list(self, object_list, bundle):
         allowed = []
@@ -245,8 +272,10 @@ class AppAuthorization(Authorization):
             return True
 
         if bundle.request.user.has_permission('delete_detail',
-                                              object_list._document._class_name):
-            return bundle.obj.created_by == bundle.request.user
+                                              get_document_type(
+                                                  object_list._document)
+                                                  ):
+            return bundle.request.user == get_created_by(object_list._document)
 
         raise Unauthorized("Sorry, no deletes.")
 
@@ -256,8 +285,14 @@ class AnyoneCanViewAuthorization(AppAuthorization):
     Custom authorization for documents that can be viewed by anyone,
     but require Authentification and Authorization for updates.
     """
+    # from hymnbooks.apps import call_stack
+
+    # @call_stack
+    # def __init__(self, *args, **kwargs):
+    #     super(AnyoneCanViewAuthorization, self).__init__(*args, **kwargs)
+
     def read_list(self, object_list, bundle):
-        return object_list.all()
+        return object_list
 
     def read_detail(self, object_list, bundle):
         return True

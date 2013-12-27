@@ -33,12 +33,12 @@ Permission types that fit API requirements.
 """
 PERMISSION_TYPE = (('create_detail', _('Create detail')),
                    ('create_list', _('Create list')),
-                   ('read_list', _('Read list')),
                    ('read_detail', _('Read detail')),
-                   ('update_list', _('Update list')),
+                   ('read_list', _('Read list')),
                    ('update_detail', _('Update detail')),
-                   ('delete_list', _('Delete list')),
-                   ('delete_detail', _('Delete detail')))
+                   ('update_list', _('Update list')),
+                   ('delete_detail', _('Delete detail')),
+                   ('delete_list', _('Delete list')), )
 
 """
 Document Types that should be defined on Permissions (analog of 
@@ -50,7 +50,8 @@ DOCUMENT_TYPE = (('MongoGroup', _('Group')),
                  ('MongoUserProfile', _('User profile')),
                  ('Section', _('Data section')),
                  ('LibraryItem', _('Library item')),
-                 ('Manuscript', _('Manuscript')))
+                 ('Manuscript', _('Manuscript')),
+                 ('ManuscriptContent', _('Manuscript content')))
 
 
 class GlobalPermission(EmbeddedDocument):
@@ -444,8 +445,7 @@ class Piece(EmbeddedGenericDocument):
     author = ListField(StringField(), required=True, help_text=_(u'Author(s)'))
     voices = ListField(EmbeddedDocumentField(Voice), help_text=_(u'Voices'))
     incipit = ListField(StringField(), help_text=_(u'Incipit'))
-    scores_mxml = StringField(help_text=_(u'Original MusicXML'))
-    scores_dict = DictField(help_text=_(u'Scores dictionary')) # converted from XML for indexing and searching by notes
+    scores_dict = DictField(help_text=_(u'Scores dictionary'))
 
     def convert_mxml_to_dict(self, media_item):
         """
@@ -460,7 +460,7 @@ class Piece(EmbeddedGenericDocument):
         except Exception as e:
             message = 'Cannot extract XML from library file %s!\nThe error os %s' %\
               (media_item.mediafile.name, e)
-            return UserMessage(message).danger()
+            return utils.UserMessage(message).danger()
 
         return
 
@@ -489,9 +489,9 @@ class Piece(EmbeddedGenericDocument):
         try:
             media_item = xml_items[0]
         except IndexError:
-            return UserMessage('Could not find XML in media files!').danger()
+            return utils.UserMessage('Could not find XML in media files!').danger()
         except Exception as e:
-            return UserMessage('Error: %s' % e).danger()
+            return utils.UserMessage('Error: %s' % e).danger()
 
         danger = self.convert_mxml_to_dict(media_item)
         if not danger:

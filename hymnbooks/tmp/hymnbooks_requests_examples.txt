@@ -45,7 +45,7 @@ curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"defa
 
 # POST
 
-curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"title": "Lorenz system", "name": "lorenz-system", "description": "The Lorenz system is a system of ordinary differential equations (the Lorenz equations) first studied by Edward Lorenz. It is notable for having chaotic solutions for certain parameter values and initial conditions. In particular, the Lorenz attractor is a set of chaotic solutions of the Lorenz system which, when plotted, resemble a butterfly or figure eight."}' http://dev.hymnbooks/api/v1/manuscript/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"title": "Kancjonał St. M", "description": "Rękopis papierowy oprawny w okładkę papierową. Zawiera 25 kart numerowanych (numeracja ciągła) w formacie stojącym o wymiarach 214 x 180 mm, oraz kart nlb. stanowiących część okładki. Brak karty tytułowej. Rękopis datowany przez W. Świerczka na 2 poł. XVIII wieku. Na okładce w lewym górnym rogu biała kwadratowa naklejka z wpisanym niebieskim atramentem St 7 M | (XVIII w). Obok naklejka okrągła z wpisanym M. poniżej naklejkaprostokątna z granatową ramką, z wpisanym różowym atramentem Benedyktynk. | Staniątki | 71/XVIII w. Trzon rękopisu spisany jedną ręką (zapis nutowy wraz tekstem słownym)."}' http://dev.hymnbooks/api/v1/manuscript/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
 
 # DELETE
 
@@ -55,6 +55,12 @@ curl --dump-header - -H "Content-Type: application/json" -X DELETE http://dev.hy
 # POST - adding content
 
 curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"name": "1-k", "page_description": "strona jeden"}' http://dev.hymnbooks/api/v1/manuscript/52b3430e02c8f1096d6a00d2/content/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
+
+# POST - adding content unauthorized: returns 401
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"name": "1-k", "page_description": "strona jeden"}' http://dev.hymnbooks/api/v1/manuscript/52b3430e02c8f1096d6a00d2/content/
+
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"name": "1-k", "page_description": "strona jeden"}' http://dev.hymnbooks/api/v1/manuscript/52b3430e02c8f1096d6a00d2/content/?username=beta\&api_key= 453aee5ba1e56d9d99f3ef4e431c7162246f042e
 
 # PATCH
 
@@ -92,11 +98,9 @@ curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"stat
 # admin: group
 # POST
 
-curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"name": "Moderators", "permissions": [{"permission": "create_detail", "document_type": "Section"}, {"permission": "update_detail", "document_type": "Section"}]}' http://dev.hymnbooks:8000/api/v1/admin_group/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"name": "Moderators", "permissions": [{"permission": "create_detail","document_type": "Manuscript"}, {"permission": "create_list","document_type": "Manuscript"}, {"permission": "update_detail","document_type": "Manuscript"}, {"permission": "update_list","document_type": "Manuscript"}, {"permission": "delete_detail","document_type": "Manuscript"}, {"permission": "delete_list","document_type": "Manuscript"}, {"permission": "create_detail","document_type": "Section"}, {"permission": "create_list","document_type": "Section"}, {"permission": "update_detail","document_type": "Section"}, {"permission": "update_list","document_type": "Section"}, {"permission": "delete_detail","document_type": "Section"}, {"permission": "delete_list","document_type": "Section"}]}' http://dev.hymnbooks/api/v1/admin_group/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
 
-# POST
-
-curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"name": "Users", "permissions": [ {"permission" : "read_list", "document_type": "Manuscript"}]}' http://dev.hymnbooks:8000/api/v1/admin_group/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"name": "Users", "permissions": [{"permission": "read_detail","document_type": "Manuscript"}, {"permission": "read_list","document_type": "Manuscript"}, {"permission": "read_detail","document_type": "Section"}, {"permission": "read_list","document_type": "Section"}]}' http://dev.hymnbooks/api/v1/admin_group/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
 
 # PATCH
 
@@ -118,7 +122,7 @@ curl --dump-header - -H "Content-Type: application/json" -X DELETE http://dev.hy
 # admin: user
 # PATCH - setup group
 
-curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"group": ["/api/v1/admin_group/5257d89a02c8f107a7921246/"]}' http://dev.hymnbooks:8000/api/v1/admin_user/5249c7af02c8f1083b2a8432/?username=beta\&api_key=715c1f6a8823d4ac2e470f178aaac6e8fe71800f
+curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"group": ["/api/v1/admin_group/52b8855902c8f107d12ef356/"]}' http://dev.hymnbooks/api/v1/admin_user/52ad8ba302c8f106bd56fc24/?username=su\&api_key=fa9eab6c5491eea4008cb1bed59fae70dabcca1d
 
 
 # WARNING! Append and delete are different for reference fields!
