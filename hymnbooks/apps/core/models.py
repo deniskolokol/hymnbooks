@@ -460,7 +460,7 @@ class Piece(EmbeddedGenericDocument):
         except Exception as e:
             message = 'Cannot extract XML from library file %s!\nThe error os %s' %\
               (media_item.mediafile.name, e)
-            return UserMessage(message).danger()
+            return utils.UserMessage(message).danger()
 
         return
 
@@ -489,9 +489,9 @@ class Piece(EmbeddedGenericDocument):
         try:
             media_item = xml_items[0]
         except IndexError:
-            return UserMessage('Could not find XML in media files!').danger()
+            return utils.UserMessage('Could not find XML in media files!').danger()
         except Exception as e:
-            return UserMessage('Error: %s' % e).danger()
+            return utils.UserMessage('Error: %s' % e).danger()
 
         danger = self.convert_mxml_to_dict(media_item)
         if not danger:
