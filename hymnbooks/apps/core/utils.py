@@ -298,18 +298,20 @@ def flatten(lst):
             yield element
 
 
-def ensure_list(val):
+def ensure_list(val, flat=False):
     """
     Convert strings, floats, etc. to list.
     """
     try:
         return [float(val)]
-    except ValueError:
+    except TypeError, ValueError:
         if hasattr(val, '__getitem__') and (not hasattr(val, '__iter__')):
             return [val] # string
         elif hasattr(val, '__getitem__') and hasattr(val, '__iter__'):
             if isinstance(val, dict):
-                return [l for l in flatten(val)]
+                if flat:
+                    return [l for l in flatten(val)]
+                return [val]
             return list(val)
-    except: # unsuccessfull!
+    except Exception as e: # unsuccessfull!
         return []
