@@ -175,7 +175,7 @@ class NewFolderView(View):
 
     def create_folder(self, name, container, request):
         # Warning!
-        # The field `created_by` temporarily substituted by superuser, if not logged on.
+        # The field `created_by` temporarily substituted by a default moderator `beta`, if not logged on.
         # However, when the authentication works, use @login_required
         # from django.contrib.auth.decorators
         if request.user.is_anonymous():

@@ -312,14 +312,17 @@ class EndUserDataResource(MongoEngineResource):
 
     def hydrate(self, bundle):
         """
-        Fill 'updated_by' and 'created_by' on POST.
+        Fills on POST:
+        - mandatory fields 'updated_by' and 'created_by'
+        - processes <fieldname>__append and <fieldname>__delete keys 
+          (returning correctly fulfilled <fieldname> instead)
         """
         try:
             bundle.data = process_instructions(bundle.data)
         except:
             # There might be resources that do not allow `sections` in their 
-            # data (for example, SectionResource). Whatever wrong happens,
-            # simply go on, the data will remain unchanged.
+            # data (for example, SectionResource). Whatever wrong happens here,
+            # simply go on, the data will remain intact.
             pass
 
         bundle.data['updated_by'] = bundle.request.user
