@@ -75,12 +75,6 @@ def ensure_slug(data, field, field_fro, obj_class=None):
 def process_instructions(data):
     """
     Processes fields with special instructions (__append, __delete, __move)
-
-    Rules:
-    - outer layer has a priority over its content:
-    -- convert {sections__append: {data__append: <v>}} to {sections__append: {data: <dict>, section: <link to schema>}}
-    - no objects in 'sections' means it's just a new section:
-    -- if sections == [], convert {sections__append: {dict}} to {sections: [{dict}]}
     """
     # Take care of `__append` keys
     append_keys = [k.rsplit('__', 1)[0] for k in data.keys() if '__append' in k]
@@ -99,12 +93,11 @@ def process_instructions(data):
     delete_keys = [k.rsplit('__', 1)[0] for k in data.keys() if '__delete' in k]
     for key in delete_keys:
         delete_key = key + '__delete'
-
         index = data.pop(delete_key)
         try:
             data[key].pop(int(index))
         except (ValueError, TypeError, IndexError):
-            pass # No such element or index given wrong.
+            pass # No such element or index given wrong, simply leave data as is.
         except Exception as e:
             pass # Do stuff only when it is right.
 
