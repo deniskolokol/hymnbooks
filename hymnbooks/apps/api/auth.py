@@ -11,6 +11,8 @@ from hymnbooks.apps.core.models import MongoUser, MongoGroup, \
 
 from mongoengine import signals
 
+import inspect
+
 # Auto create API key when user is saved.
 signals.post_save.connect(create_api_key, sender=MongoUser)
 
@@ -137,13 +139,22 @@ class StaffAuthorization(Authorization):
         # This assumes a QuerySet from ModelResource.
         try:
             if bundle.request.user.is_superuser or bundle.request.user.is_staff:
-                return object_list.all()
+                try:
+                    return object_list.all()
+                except AttributeError:
+                    # dict doesn't have .all()
+                    return object_list
             else:
                 return []
         except AttributeError:
             raise Unauthorized(_('You have to authenticate first!'))
         
-    def read_detail(self, object_list, bundle):        
+    def read_detail(self, object_list, bundle):
+        if bundle.request.user.is_anonymous():
+            # Double-check anonymous users, because operations
+            # on embedded fields do not pass through authentication.
+            AppApiKeyAuthentication().is_authenticated(bundle.request)
+
         try:
             return bundle.request.user.is_superuser or bundle.request.user.is_staff
         except AttributeError:
@@ -219,7 +230,7 @@ class AppAuthorization(Authorization):
         
     def read_detail(self, object_list, bundle):
         if bundle.request.user.is_anonymous():
-            # Performing double-check for anonymous users, because operations
+            # Double-check anonymous users, because operations
             # on embedded fields do not pass through authentication.
             AppApiKeyAuthentication().is_authenticated(bundle.request)
 
@@ -294,12 +305,6 @@ class AnyoneCanViewAuthorization(AppAuthorization):
     Custom authorization for documents that can be viewed by anyone,
     but require Authentification and Authorization for updates.
     """
-    # from hymnbooks.apps import call_stack
-
-    # @call_stack
-    # def __init__(self, *args, **kwargs):
-    #     super(AnyoneCanViewAuthorization, self).__init__(*args, **kwargs)
-
     def read_list(self, object_list, bundle):
         return object_list
 
