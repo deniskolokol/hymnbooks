@@ -370,9 +370,7 @@ class SectionResource(EndUserDataResource):
             }
         ordering = ('name', 'help_text', 'status', 'created', 'updated',)
         always_return_data = True
-        # TEST ONLY!
-        # authorization = AppAuthorization()
-        authorization = Authorization()
+        authorization = AppAuthorization()
         authentication = MultiAuthentication(AppApiKeyAuthentication(),
                                              CookieBasicAuthentication())
 

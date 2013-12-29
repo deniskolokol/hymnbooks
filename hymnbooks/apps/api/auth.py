@@ -108,6 +108,7 @@ class AppApiKeyAuthentication(ApiKeyAuthentication):
 
         return is_authenticated
 
+
 class CookieBasicAuthentication(BasicAuthentication):
     """
     If the user is already authenticated by a django session it will 
@@ -217,9 +218,17 @@ class AppAuthorization(Authorization):
             raise Unauthorized(_('You have to authenticate first!'))
         
     def read_detail(self, object_list, bundle):
-        return bundle.request.user.is_superuser or \
-          bundle.request.user.has_permission('read_detail',
-                                             get_document_type(bundle.obj))
+        if bundle.request.user.is_anonymous():
+            # Performing double-check for anonymous users, because operations
+            # on embedded fields do not pass through authentication.
+            AppApiKeyAuthentication().is_authenticated(bundle.request)
+
+        try:
+            return bundle.request.user.is_superuser or \
+              bundle.request.user.has_permission('read_detail',
+                                                 get_document_type(bundle.obj))
+        except AttributeError:
+            raise Unauthorized(_('You have to authenticate first!'))
 
     def create_detail(self, object_list, bundle):
         try:
